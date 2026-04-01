@@ -1,0 +1,5 @@
+package com.lapetite.sabji_mart
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
