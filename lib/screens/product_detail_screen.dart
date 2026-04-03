@@ -1,7 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
 import '../../models/product.dart';
+import '../../models/addon.dart';
+import '../../models/variant.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/favourites_provider.dart';
 import '../../providers/product_provider.dart';
@@ -26,21 +29,35 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantity = 0;
   int _activeImage = 0;
-  int _selectedSideCard = 0;
-  final Set<int> _selectedAddons = {};
+  int _selectedVariantIndex = 0;
+  // Track selected quantity for each addon by its index
+  final Map<int, int> _selectedAddonQuantities = {};
   final TextEditingController _instructionsCtrl = TextEditingController();
 
-  static const _mockSides = [
-    (name: 'French Fries', price: 0.0),
-    (name: 'Garden Salad', price: 2.0),
-    (name: 'Grilled Asparagus', price: 4.0),
-  ];
+  /// Get the selected variant item from the product's variants
+  VariantItem? get _selectedVariantItem {
+    if (widget.product.variants.isEmpty) return null;
+    final variant = widget.product.variants.first;
+    if (_selectedVariantIndex >= variant.variantItems.length) return null;
+    return variant.variantItems[_selectedVariantIndex];
+  }
 
-  static const _mockAddons = [
-    (name: 'Extra Cheese', price: 1.50),
-    (name: 'Crispy Bacon', price: 3.00),
-    (name: 'Fried Egg', price: 2.00),
-  ];
+  /// Get the formatted display name for a variant item
+  String _getVariantDisplayName(VariantItem item) {
+    if (widget.product.variants.isEmpty) return '';
+    final variant = widget.product.variants.first;
+    final optionTitles = variant.options.map((o) => o.title).toList();
+    
+    List<String> parts = [];
+    for (int i = 0; i < item.optionValues.length; i++) {
+      if (i < optionTitles.length) {
+        parts.add('${optionTitles[i]}: ${item.optionValues[i]}');
+      } else {
+        parts.add(item.optionValues[i]);
+      }
+    }
+    return parts.join(' | ');
+  }
 
   @override
   void initState() {
@@ -72,15 +89,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final productProv = context.watch<ProductProvider>();
     final isFav = favProv.isFavourite(widget.product.id);
 
-    final double sidesPrice =
-        _mockSides.isNotEmpty ? _mockSides[_selectedSideCard].price : 0.0;
-
-    final double addonsPrice = _selectedAddons
-        .map((i) => _mockAddons[i].price)
-        .fold(0.0, (sum, price) => sum + price);
+    // Use variant price if available, otherwise use product base price
+    final variantPrice = _selectedVariantItem?.price ?? widget.product.price;
+    
+    // Calculate addons price from selected addon quantities
+    double addonsPrice = 0.0;
+    _selectedAddonQuantities.forEach((addonIndex, quantity) {
+      if (quantity > 0 && addonIndex < widget.product.addons.length) {
+        addonsPrice += widget.product.addons[addonIndex].price * quantity;
+      }
+    });
 
     final double totalPrice =
-        (widget.product.price + sidesPrice + addonsPrice) * _quantity;
+        (variantPrice + addonsPrice) * _quantity;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -139,8 +160,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        Text(widget.product.image,
-                            style: const TextStyle(fontSize: 110)),
+                        // Display product image with caching
+                        if (widget.product.image.isNotEmpty)
+                          CachedNetworkImage(
+                            imageUrl: widget.product.image,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white70,
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.restaurant,
+                              size: 100,
+                              color: Colors.white70,
+                            ),
+                          )
+                        else
+                          const Icon(
+                            Icons.restaurant,
+                            size: 100,
+                            color: Colors.white70,
+                          ),
                         // Gallery dots
                         Positioned(
                           bottom: 18,
@@ -255,43 +298,64 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Choose your side
-                      _SectionHeader(
-                        title: l10n.variants,
-                      ),
-                      const SizedBox(height: 16),
-                      ...List.generate(_mockSides.length, (i) {
-                        return _OptionItem(
-                          name: _mockSides[i].name,
-                          price: _mockSides[i].price,
-                          isActive: _selectedSideCard == i,
-                          onTap: () => setState(() => _selectedSideCard = i),
-                        );
-                      }),
+                      // Variants Section
+                      if (widget.product.variants.isNotEmpty &&
+                          widget.product.variants.first.variantItems.isNotEmpty) ...[
+                        _SectionHeader(
+                          title: widget.product.variants.first.options.isNotEmpty
+                              ? widget.product.variants.first.options.first.title
+                              : l10n.variants,
+                        ),
+                        const SizedBox(height: 16),
+                        ...List.generate(
+                          widget.product.variants.first.variantItems.length,
+                          (i) {
+                            final variantItem =
+                                widget.product.variants.first.variantItems[i];
+                            return _VariantItem(
+                              name: _getVariantDisplayName(variantItem),
+                              price: variantItem.price,
+                              isActive: _selectedVariantIndex == i,
+                              isAvailable: variantItem.isAvailable,
+                              onTap: () => setState(() => _selectedVariantIndex = i),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                      ],
                       const SizedBox(height: 24),
 
                       // Add-ons
-                      _SectionHeader(
-                        title: l10n.addOns,
-                      ),
-                      const SizedBox(height: 16),
-                      ...List.generate(_mockAddons.length, (i) {
-                        final isActive = _selectedAddons.contains(i);
-                        return _OptionItem(
-                          name: _mockAddons[i].name,
-                          price: _mockAddons[i].price,
-                          isActive: isActive,
-                          onTap: () {
-                            setState(() {
-                              if (isActive) {
-                                _selectedAddons.remove(i);
-                              } else {
-                                _selectedAddons.add(i);
+                      if (widget.product.addons.isNotEmpty) ...[
+                        _SectionHeader(
+                          title: l10n.addOns,
+                        ),
+                        const SizedBox(height: 16),
+                        ...widget.product.addons.asMap().entries.map((entry) {
+                          final addonIndex = entry.key;
+                          final addon = entry.value;
+                          final selectedQty = _selectedAddonQuantities[addonIndex] ?? 0;
+                          return _AddonItem(
+                            addon: addon,
+                            selectedQuantity: selectedQty,
+                            onIncrement: () {
+                              if (selectedQty < addon.maxAvailable) {
+                                setState(() {
+                                  _selectedAddonQuantities[addonIndex] = selectedQty + 1;
+                                });
                               }
-                            });
-                          },
-                        );
-                      }),
+                            },
+                            onDecrement: () {
+                              if (selectedQty > 0) {
+                                setState(() {
+                                  _selectedAddonQuantities[addonIndex] = selectedQty - 1;
+                                });
+                              }
+                            },
+                          );
+                        }),
+                        const SizedBox(height: 24),
+                      ],
                       const SizedBox(height: 24),
 
                       // Special Instructions
@@ -433,6 +497,209 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+class _VariantItem extends StatelessWidget {
+  final String name;
+  final double price;
+  final bool isActive;
+  final bool isAvailable;
+  final VoidCallback onTap;
+
+  const _VariantItem({
+    required this.name,
+    required this.price,
+    required this.isActive,
+    required this.isAvailable,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: isAvailable ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: isAvailable
+              ? Theme.of(context).cardColor
+              : Theme.of(context).cardColor.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isActive
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).dividerColor,
+            width: isActive ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: !isAvailable
+                      ? Theme.of(context).dividerColor
+                      : isActive
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).unselectedWidgetColor,
+                  width: !isAvailable ? 1.5 : isActive ? 6 : 1.5,
+                ),
+                color: !isAvailable
+                    ? Theme.of(context).dividerColor.withValues(alpha: 0.3)
+                    : null,
+              ),
+              child: !isAvailable
+                  ? Icon(Icons.close, size: 14,
+                      color: Theme.of(context).cardColor)
+                  : null,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                name,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                      decoration: isAvailable ? null : TextDecoration.lineThrough,
+                    ),
+              ),
+            ),
+            Text(
+              'Rs ${price.toStringAsFixed(2)}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: !isAvailable
+                        ? Theme.of(context).dividerColor
+                        : isActive
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddonItem extends StatelessWidget {
+  final Addon addon;
+  final int selectedQuantity;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+
+  const _AddonItem({
+    required this.addon,
+    required this.selectedQuantity,
+    required this.onIncrement,
+    required this.onDecrement,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: selectedQuantity > 0
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).dividerColor,
+          width: selectedQuantity > 0 ? 1.5 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  addon.name,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                if (addon.description.isNotEmpty)
+                  Text(
+                    addon.description,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                Text(
+                  'Rs ${addon.price.toStringAsFixed(2)}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          // Quantity controls
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: selectedQuantity > 0 ? onDecrement : null,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.remove,
+                      size: 16,
+                      color: selectedQuantity > 0
+                          ? Theme.of(context).colorScheme.onSecondaryContainer
+                          : Theme.of(context).dividerColor,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 24,
+                  child: Text(
+                    '$selectedQuantity',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.onSecondaryContainer,
+                        ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: selectedQuantity < addon.maxAvailable ? onIncrement : null,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.add,
+                      size: 16,
+                      color: selectedQuantity < addon.maxAvailable
+                          ? Theme.of(context).colorScheme.onSecondaryContainer
+                          : Theme.of(context).dividerColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _OptionItem extends StatelessWidget {
   final String name;
   final double price;
@@ -489,7 +756,7 @@ class _OptionItem extends StatelessWidget {
               ),
             ),
             Text(
-              price == 0 ? AppLocalizations.of(context)!.free : '+\$${price.toStringAsFixed(2)}',
+              price == 0 ? AppLocalizations.of(context)!.free : '+ Rs ${price.toStringAsFixed(2)}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: isActive
                         ? Theme.of(context).colorScheme.primary

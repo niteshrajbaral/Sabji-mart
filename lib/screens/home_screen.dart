@@ -84,6 +84,12 @@ class _HomeScreenState extends State<HomeScreen>
             .where((p) => p.category == _selectedCategory)
             .toList();
 
+    // Filter out composite items (they are shown in the offer slider)
+    // Only filter when not searching, so users can still find composite items via search
+    if (_searchQuery.trim().isEmpty) {
+      list = list.where((p) => !p.usesCompositeItems).toList();
+    }
+
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       list = list.where((p) {

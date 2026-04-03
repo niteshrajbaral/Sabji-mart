@@ -43,21 +43,18 @@ class GridProductCard extends StatelessWidget {
               // Image area
               Stack(
                 children: [
-                  Container(
-                    height: width > 800 ? 150 : 100,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppDecorations.radiusM),
-                      color: const Color(0xFFC5DEA0),
-                    ),
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.hardEdge,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppDecorations.radiusM),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppDecorations.radiusM),
+                    child: Container(
+                      height: width > 800 ? 150 : 100,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppDecorations.radiusM),
+                      ),
                       child: Image.network(
                         product.image,
                         fit: BoxFit.cover,
-                        height: width > 800 ? 150 : 100,
+                        width: double.infinity,
                       ),
                     ),
                   ),
@@ -110,7 +107,7 @@ class GridProductCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            '\$${product.price.toStringAsFixed(2)}',
+                            'Rs ${product.price.toStringAsFixed(0)}',
                             style: AppTextStyles.price,
                             // overflow: TextOverflow.ellipsis,
                           ),

@@ -21,10 +21,27 @@ class ProductProvider extends ChangeNotifier {
       products = await repository.getProducts();
       debugPrint('[ProductProvider] Successfully loaded ${products.length} products');
       
-      // Debug: Print first 3 products
-      for (var i = 0; i < products.length && i < 3; i++) {
-        debugPrint('[ProductProvider] Product ${i + 1}: ${products[i].name} - \$${products[i].price}');
+      // Debug: Print all products with their usesCompositeItems status
+      debugPrint('[ProductProvider] === PRODUCT LIST ===');
+      int compositeCount = 0;
+      for (var i = 0; i < products.length; i++) {
+        final product = products[i];
+        debugPrint('[ProductProvider] Product ${i + 1}: ${product.name} - Rs ${product.price}');
+        debugPrint('[ProductProvider]   ID: ${product.id}');
+        debugPrint('[ProductProvider]   usesCompositeItems: ${product.usesCompositeItems}');
+        debugPrint('[ProductProvider]   compositeItems count: ${product.compositeItems.length}');
+        if (product.usesCompositeItems) {
+          compositeCount++;
+          debugPrint('[ProductProvider]   *** COMPOSITE PRODUCT ***');
+          if (product.compositeItems.isNotEmpty) {
+            for (var item in product.compositeItems) {
+              debugPrint('[ProductProvider]     - ${item.name} (qty: ${item.quantity})');
+            }
+          }
+        }
       }
+      debugPrint('[ProductProvider] === END PRODUCT LIST ===');
+      debugPrint('[ProductProvider] Total composite products: $compositeCount');
     } catch (e) {
       errorMessage = e.toString();
       debugPrint('[ProductProvider] Error loading products: $e');

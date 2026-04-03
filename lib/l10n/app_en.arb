@@ -126,5 +126,8 @@
   "orderProgress": "Order Progress",
   "stepXofY": "Step {step} of {total}",
   "trackMyOrder": "Track My Order",
-  "continueShopping": "Continue Shopping"
+  "continueShopping": "Continue Shopping",
+  "includesItems": "Includes",
+  "noItemsInBundle": "No items in this bundle",
+  "bundleInfo": "This is a bundled offer. When you add this to your cart, you'll receive all the items listed above in the specified quantities."
 }
