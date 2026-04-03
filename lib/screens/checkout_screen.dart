@@ -95,7 +95,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     child: PrimaryButton(
                       label: _step < 2
                           ? l10n.continueBtn
-                          : '${l10n.placeOrder} — \$${cart.total.toStringAsFixed(2)}',
+                          : '${l10n.placeOrder} — Rs ${cart.total.toStringAsFixed(2)}',
                       onTap: () {
                         if (_step < 2) {
                           setState(() => _step++);

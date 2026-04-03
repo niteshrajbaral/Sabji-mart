@@ -14,7 +14,7 @@ class CartProvider extends ChangeNotifier {
   double get subtotal =>
       _items.fold(0.0, (sum, i) => sum + i.product.price * i.quantity);
 
-  static const double deliveryFee = 2.50;
+  static const double deliveryFee = 130;
   double get total => subtotal + deliveryFee;
 
   bool contains(Product product) =>

@@ -160,25 +160,26 @@ class AddressBottomSheet extends StatelessWidget {
         color: AppColors.warmWhite,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: AppColors.beige,
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.beige,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          Text('Select Address',
-              style: AppTextStyles.headlineLarge.copyWith(fontSize: 18)),
-          const SizedBox(height: 16),
-          ...AppData.savedAddresses.map((addr) {
+            Text('Select Address',
+                style: AppTextStyles.headlineLarge.copyWith(fontSize: 18)),
+            const SizedBox(height: 16),
+            ...AppData.savedAddresses.map((addr) {
             final isSelected = addr.id == selectedId;
             return GestureDetector(
               onTap: () {
@@ -258,7 +259,8 @@ class AddressBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -98,7 +98,7 @@ class ProductCard extends StatelessWidget {
                             child: Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                '\$${product.price.toStringAsFixed(2)}',
+                                'Rs ${product.price.toStringAsFixed(0)}',
                                 style: AppTextStyles.price,
                                 // overflow: TextOverflow.ellipsis,
                               ),

@@ -67,7 +67,7 @@ class _ProductBottomCtaState extends State<ProductBottomCta>
               filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: Theme.of(context)
                       .scaffoldBackgroundColor
@@ -104,11 +104,11 @@ class _ProductBottomCtaState extends State<ProductBottomCta>
                             child: FadeTransition(opacity: anim, child: child),
                           ),
                           child: Text(
-                            '\$${widget.totalPrice.toStringAsFixed(2)}',
+                            'Rs ${widget.totalPrice.toStringAsFixed(0)}',
                             key: ValueKey(widget.totalPrice),
                             style: Theme.of(context)
                                 .textTheme
-                                .displaySmall
+                                .headlineLarge
                                 ?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   color: cs.onSurface,
@@ -123,8 +123,8 @@ class _ProductBottomCtaState extends State<ProductBottomCta>
 
                     // ── Stepper pill (center-right) ───────────────────
                     Container(
-                      height: 48,
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      height: 38,
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
                       decoration: BoxDecoration(
                         color: cs.onSurface.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(24),
@@ -138,7 +138,7 @@ class _ProductBottomCtaState extends State<ProductBottomCta>
                             filled: false,
                           ),
                           SizedBox(
-                            width: 40,
+                            width: 32,
                             child: AnimatedSwitcher(
                               duration: const Duration(milliseconds: 200),
                               transitionBuilder: (child, anim) =>
@@ -149,7 +149,7 @@ class _ProductBottomCtaState extends State<ProductBottomCta>
                                 textAlign: TextAlign.center,
                                 style: Theme.of(context)
                                     .textTheme
-                                    .titleLarge
+                                    .titleMedium
                                     ?.copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: cs.onSurface,
@@ -168,7 +168,7 @@ class _ProductBottomCtaState extends State<ProductBottomCta>
 
                     const SizedBox(width: 12),
 
-                    // ── Pulsing basket button ─────────────────────────
+                    // ── Checkout button with cart icon ─────────────────────────
                     GestureDetector(
                       onTap: widget.onCheckout,
                       child: AnimatedBuilder(
@@ -178,24 +178,24 @@ class _ProductBottomCtaState extends State<ProductBottomCta>
                           child: child,
                         ),
                         child: Container(
-                          width: 54,
-                          height: 54,
+                          width: 42,
+                          height: 42,
                           decoration: BoxDecoration(
                             color: cs.primary,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: cs.primary.withValues(alpha: 0.45),
-                                blurRadius: 16,
-                                spreadRadius: 2,
-                                offset: const Offset(0, 4),
+                                color: cs.primary.withValues(alpha: 0.35),
+                                blurRadius: 12,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
                           child: Icon(
-                            Icons.shopping_basket_rounded,
+                            Icons.shopping_cart_rounded,
                             color: cs.onPrimary,
-                            size: 24,
+                            size: 22,
                           ),
                         ),
                       ),
@@ -231,8 +231,8 @@ class _StepperButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        width: 40,
-        height: 40,
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
           color: filled ? cs.primary : Theme.of(context).cardColor,
           shape: BoxShape.circle,
@@ -247,7 +247,7 @@ class _StepperButton extends StatelessWidget {
         ),
         child: Icon(
           icon,
-          size: 22,
+          size: 18,
           color: filled ? cs.onPrimary : cs.primary,
         ),
       ),

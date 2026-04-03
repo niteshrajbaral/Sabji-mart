@@ -390,4 +390,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get continueShopping => 'Continue Shopping';
+
+  @override
+  String get includesItems => 'Includes';
+
+  @override
+  String get noItemsInBundle => 'No items in this bundle';
+
+  @override
+  String get bundleInfo =>
+      'This is a bundled offer. When you add this to your cart, you\'ll receive all the items listed above in the specified quantities.';
 }

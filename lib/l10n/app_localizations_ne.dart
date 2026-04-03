@@ -392,4 +392,14 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get continueShopping => 'किनमेल जारी राख्नुहोस्';
+
+  @override
+  String get includesItems => 'समावेश छ';
+
+  @override
+  String get noItemsInBundle => 'यो बन्डलमा कुनै आइटमहरू छैनन्';
+
+  @override
+  String get bundleInfo =>
+      'यो एउटा बन्डल अफर हो। जब तपाईंले यसलाई आफ्नो कार्टमा थप्नुहुन्छ, तपाईंले माथि सूचीबद्ध सबै आइटमहरू निर्दिष्ट परिमाणमा प्राप्त गर्नुहुनेछ।';
 }

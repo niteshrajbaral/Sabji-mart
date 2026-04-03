@@ -38,9 +38,12 @@ class CartScreen extends StatelessWidget {
     final favProv = context.watch<FavouritesProvider>();
     final productProv = context.watch<ProductProvider>();
 
+    final width = MediaQuery.of(context).size.width;
+
     final cartIds = cart.items.map((i) => i.product.id).toSet();
     final suggestions = productProv.products
         .where((p) => !cartIds.contains(p.id))
+        .where((p) => !p.usesCompositeItems) // Filter out composite items (shown in offer slider)
         .take(4)
         .toList();
 
@@ -103,7 +106,7 @@ class CartScreen extends StatelessWidget {
                                   style: AppTextStyles.headlineSmall),
                               const SizedBox(height: 12),
                               SizedBox(
-                                height: 230,
+                                height: width> 800 ? 250 : 230,
                                 child: ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   physics: const BouncingScrollPhysics(),
@@ -166,7 +169,7 @@ class CartScreen extends StatelessWidget {
                                         value: cart.subtotal),
                                     const SizedBox(height: 10),
                                     _PriceSummaryRow(
-                                        label: l10n.deliveryFee, value: 2.50),
+                                        label: l10n.deliveryFee, value: 130),
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 12),
@@ -183,7 +186,7 @@ class CartScreen extends StatelessWidget {
                                             style:
                                                 AppTextStyles.headlineMedium),
                                         Text(
-                                            '\$${cart.total.toStringAsFixed(2)}',
+                                            'Rs ${cart.total.toStringAsFixed(0)}',
                                             style: AppTextStyles.priceLarge
                                                 .copyWith(
                                               color: AppColors.terracotta,
@@ -207,7 +210,7 @@ class CartScreen extends StatelessWidget {
                 left: 0,
                 right: 0,
                 child: PrimaryButton(
-                  label: '${l10n.checkout} — \$${cart.total.toStringAsFixed(2)}',
+                  label: '${l10n.checkout} — Rs ${cart.total.toStringAsFixed(0)}',
                   onTap: () {
                     if (cart.items.isNotEmpty) {
                       context.push('/cart/checkout');
@@ -236,7 +239,7 @@ class _PriceSummaryRow extends StatelessWidget {
         Text(label,
             style:
                 AppTextStyles.bodyMedium.copyWith(color: AppColors.textLight)),
-        Text('\$${value.toStringAsFixed(2)}',
+        Text('Rs ${value.toStringAsFixed(0)}',
             style: AppTextStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.w600, color: AppColors.darkBrown)),
       ],

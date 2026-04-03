@@ -80,7 +80,7 @@ class OrderCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                '\$${order.total.toStringAsFixed(2)}',
+                'Rs ${order.total.toStringAsFixed(2)}',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: featured
                           ? Theme.of(context).colorScheme.onPrimary

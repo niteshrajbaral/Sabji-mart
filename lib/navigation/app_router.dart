@@ -5,6 +5,7 @@ import '../models/product.dart';
 import 'app_shell.dart';
 import '../screens/home_screen.dart';
 import '../screens/product_detail_screen.dart';
+import '../screens/composite_product_detail_screen.dart';
 import '../screens/cart_screen.dart';
 import '../screens/checkout_screen.dart';
 import '../screens/order_success_screen.dart';
@@ -76,6 +77,13 @@ final router = GoRouter(
                   builder: (context, state) {
                     final product = state.extra as Product;
                     return ProductDetailScreen(product: product);
+                  },
+                ),
+                GoRoute(
+                  path: 'composite-product',
+                  builder: (context, state) {
+                    final product = state.extra as Product;
+                    return CompositeProductDetailScreen(product: product);
                   },
                 ),
                 GoRoute(

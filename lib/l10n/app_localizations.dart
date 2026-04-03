@@ -859,6 +859,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue Shopping'**
   String get continueShopping;
+
+  /// No description provided for @includesItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes'**
+  String get includesItems;
+
+  /// No description provided for @noItemsInBundle.
+  ///
+  /// In en, this message translates to:
+  /// **'No items in this bundle'**
+  String get noItemsInBundle;
+
+  /// No description provided for @bundleInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a bundled offer. When you add this to your cart, you\'ll receive all the items listed above in the specified quantities.'**
+  String get bundleInfo;
 }
 
 class _AppLocalizationsDelegate
