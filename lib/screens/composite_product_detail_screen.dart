@@ -27,14 +27,14 @@ class CompositeProductDetailScreen extends StatefulWidget {
 
 class _CompositeProductDetailScreenState
     extends State<CompositeProductDetailScreen> {
-  int _quantity = 0;
+  int _quantity = 1;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final cartItem = context
-          .read<CartProvider>()
+      final cartProvider = context.read<CartProvider>();
+      final cartItem = cartProvider
           .items
           .where((i) => i.product.id == widget.product.id)
           .firstOrNull;
@@ -42,6 +42,12 @@ class _CompositeProductDetailScreenState
         setState(() {
           _quantity = cartItem.quantity;
         });
+      } else if (mounted) {
+        // Auto-add product to cart with quantity 1 on opening
+        setState(() {
+          _quantity = 1;
+        });
+        cartProvider.addProduct(widget.product, quantity: 1);
       }
     });
   }
@@ -166,7 +172,7 @@ class _CompositeProductDetailScreenState
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            'Rs ${widget.product.price.toStringAsFixed(2)}',
+                            'Rs ${widget.product.price.toStringAsFixed(0)}',
                             style: Theme.of(context)
                                 .textTheme
                                 .headlineMedium

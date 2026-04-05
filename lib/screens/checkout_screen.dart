@@ -95,11 +95,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     child: PrimaryButton(
                       label: _step < 2
                           ? l10n.continueBtn
-                          : '${l10n.placeOrder} — Rs ${cart.total.toStringAsFixed(2)}',
+                          : '${l10n.placeOrder} — Rs ${cart.total.toStringAsFixed(0)}',
                       onTap: () {
                         if (_step < 2) {
                           setState(() => _step++);
                         } else {
+                          // Clear the cart before navigating to success screen
+                          cart.clear();
+                          // Navigate to success screen
                           context.go('/cart/checkout/success');
                         }
                       },
@@ -385,14 +388,14 @@ class _Step2 extends StatelessWidget {
                           style: textTheme.bodySmall)),
                   Expanded(
                       flex: 2,
-                      child: Text(item.product.price.toStringAsFixed(2),
+                      child: Text(item.product.price.toStringAsFixed(0),
                           textAlign: TextAlign.right,
                           style: textTheme.bodySmall)),
                   Expanded(
                       flex: 2,
                       child: Text(
                           (item.product.price * item.quantity)
-                              .toStringAsFixed(2),
+                              .toStringAsFixed(0),
                           textAlign: TextAlign.right,
                           style: textTheme.bodySmall)),
                 ],
@@ -405,7 +408,7 @@ class _Step2 extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(l10n.totalLabel, style: textTheme.bodyMedium),
-            Text('Rs ${cart.total.toStringAsFixed(2)}',
+            Text('Rs ${cart.total.toStringAsFixed(0)}',
                 style: textTheme.bodyMedium),
           ],
         ),
@@ -424,7 +427,7 @@ class _Step2 extends StatelessWidget {
             Text(l10n.grandTotal,
                 style: textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
-            Text('Rs ${cart.total.toStringAsFixed(2)}',
+            Text('Rs ${cart.total.toStringAsFixed(0)}',
                 style: textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
           ],

@@ -7,6 +7,8 @@ import '../components/app_back_button.dart';
 import '../../components/service_icon.dart';
 import 'package:provider/provider.dart';
 import '../providers/locale_provider.dart';
+import '../providers/address_provider.dart';
+import '../models/address.dart';
 import '../l10n/app_localizations.dart';
 
 // ── Edit Profile ──────────────────────────────────────────────────────────────
@@ -227,6 +229,38 @@ class _FieldInput extends StatelessWidget {
 class SavedAddressesScreen extends StatelessWidget {
   const SavedAddressesScreen({super.key});
 
+  void _confirmDelete(BuildContext context, Address address) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Address?'),
+        content: Text(
+          'Are you sure you want to delete "${address.label}"? This action cannot be undone.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<AddressProvider>().removeAddress(address.id);
+              Navigator.pop(ctx);
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -247,111 +281,121 @@ class SavedAddressesScreen extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                children: [
-                  ...AppData.savedAddresses.map((a) {
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      color: Theme.of(context).cardColor,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                            color: Theme.of(context).dividerColor, width: 1.5),
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        leading: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).dividerColor,
-                            borderRadius: BorderRadius.circular(16),
+              child: Consumer<AddressProvider>(
+                builder: (context, addressProvider, _) {
+                  final addresses = addressProvider.addresses;
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    children: [
+                      ...addresses.map((a) {
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          color: Theme.of(context).cardColor,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                                color: Theme.of(context).dividerColor, width: 1.5),
                           ),
-                          alignment: Alignment.center,
-                          child: Text(a.icon,
-                              style: const TextStyle(fontSize: 20)),
-                        ),
-                        title: Row(
-                          children: [
-                            Text(a.label,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyLarge
-                                    ?.copyWith(fontWeight: FontWeight.w500)),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 7, vertical: 2),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            leading: Container(
+                              width: 48,
+                              height: 48,
                               decoration: BoxDecoration(
-                                color: a.type == 'Pickup'
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .withValues(alpha: 0.12)
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .secondary
-                                        .withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(5),
+                                color: Theme.of(context).dividerColor,
+                                borderRadius: BorderRadius.circular(16),
                               ),
+                              alignment: Alignment.center,
+                              child: Text(a.icon,
+                                  style: const TextStyle(fontSize: 20)),
+                            ),
+                            title: Row(
+                              children: [
+                                Text(a.label,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.copyWith(fontWeight: FontWeight.w500)),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: a.type == 'Pickup'
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .primary
+                                            .withValues(alpha: 0.12)
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .secondary
+                                            .withValues(alpha: 0.14),
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  child: Text(
+                                    a.type,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: a.type == 'Pickup'
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                a.type,
+                                a.address,
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodySmall
-                                    ?.copyWith(
-                                      color: a.type == 'Pickup'
-                                          ? Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                    ?.copyWith(fontSize: 12),
                               ),
                             ),
-                          ],
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            a.address,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(fontSize: 12),
+                            trailing: IconButton(
+                              icon: Icon(Icons.delete_outline_rounded,
+                                  color: Theme.of(context).colorScheme.error,
+                                  size: 22),
+                              onPressed: () => _confirmDelete(context, a),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
                           ),
+                        );
+                      }),
+                      OutlinedButton.icon(
+                        onPressed: () => context.push('/profile/addresses/add'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.all(16),
+                          side: BorderSide(
+                              color: Theme.of(context).dividerColor, width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                        trailing: Icon(Icons.more_vert_rounded,
-                            color: Theme.of(context).colorScheme.outline,
-                            size: 20),
+                        icon: Icon(Icons.add_rounded),
+                        label: Text('Add New Address',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant)),
                       ),
-                    );
-                  }),
-                  OutlinedButton.icon(
-                    onPressed: () => context.push('/profile/addresses/add'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      side: BorderSide(
-                          color: Theme.of(context).dividerColor, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      foregroundColor:
-                          Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    icon: Icon(Icons.add_rounded),
-                    label: Text('Add New Address',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant)),
-                  ),
-                ],
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -839,8 +883,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 // ── Add New Address ──────────────────────────────────────────────────────────
 
-class AddNewAddressScreen extends StatelessWidget {
+class AddNewAddressScreen extends StatefulWidget {
   const AddNewAddressScreen({super.key});
+
+  @override
+  State<AddNewAddressScreen> createState() => _AddNewAddressScreenState();
+}
+
+class _AddNewAddressScreenState extends State<AddNewAddressScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _labelController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _postcodeController = TextEditingController();
+  String _selectedType = 'Delivery';
+  final List<String> _icons = ['🏠', '🏢', '🏪', '🍽️', '🏭'];
+  String _selectedIcon = '🏠';
+
+  @override
+  void dispose() {
+    _labelController.dispose();
+    _addressController.dispose();
+    _cityController.dispose();
+    _postcodeController.dispose();
+    super.dispose();
+  }
+
+  void _saveAddress() {
+    if (_formKey.currentState!.validate()) {
+      final address = Address(
+        id: AppData.nextId,
+        label: _labelController.text.trim(),
+        address:
+            '${_addressController.text.trim()}, ${_cityController.text.trim()}, ${_postcodeController.text.trim()}',
+        icon: _selectedIcon,
+        type: _selectedType,
+      );
+
+      context.read<AddressProvider>().addAddress(address);
+      context.pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -861,95 +944,157 @@ class AddNewAddressScreen extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Map placeholder
-                    Container(
-                      height: 180,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).dividerColor,
-                        borderRadius: BorderRadius.circular(20),
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Map placeholder
+                      // Container(
+                      //   height: 180,
+                      //   decoration: BoxDecoration(
+                      //     color: Theme.of(context).dividerColor,
+                      //     borderRadius: BorderRadius.circular(20),
+                      //   ),
+                      //   alignment: Alignment.center,
+                      //   child: Column(
+                      //     mainAxisSize: MainAxisSize.min,
+                      //     children: [
+                      //       const Text('🗺️', style: TextStyle(fontSize: 40)),
+                      //       const SizedBox(height: 8),
+                      //       Text('Tap to set location',
+                      //           style: Theme.of(context).textTheme.bodySmall),
+                      //     ],
+                      //   ),
+                      // ),
+                      const SizedBox(height: 20),
+                      _buildLbl(context, 'LABEL'),
+                      _buildTextField(
+                        context,
+                        controller: _labelController,
+                        hint: 'e.g. Home, Office',
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a label';
+                          }
+                          return null;
+                        },
                       ),
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                      const SizedBox(height: 14),
+                      _buildLbl(context, 'STREET ADDRESS'),
+                      _buildTextField(
+                        context,
+                        controller: _addressController,
+                        hint: '123 Bakery Street',
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter street address';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      _buildLbl(context, 'CITY'),
+                      _buildTextField(
+                        context,
+                        controller: _cityController,
+                        hint: 'London',
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter city';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      _buildLbl(context, 'POSTCODE'),
+                      _buildTextField(
+                        context,
+                        controller: _postcodeController,
+                        hint: 'W1F 0TH',
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter postcode';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      _buildLbl(context, 'ADDRESS TYPE'),
+                      const SizedBox(height: 8),
+                      Row(
                         children: [
-                          const Text('🗺️', style: TextStyle(fontSize: 40)),
-                          const SizedBox(height: 8),
-                          Text('Tap to set location',
-                              style: Theme.of(context).textTheme.bodySmall),
+                          Expanded(
+                            child: _TypeButton(
+                              icon: '🏠',
+                              label: 'Delivery',
+                              isSelected: _selectedType == 'Delivery',
+                              onTap: () =>
+                                  setState(() => _selectedType = 'Delivery'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _TypeButton(
+                              icon: '🏪',
+                              label: 'Pickup',
+                              isSelected: _selectedType == 'Pickup',
+                              onTap: () =>
+                                  setState(() => _selectedType = 'Pickup'),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildLbl(context, 'LABEL'),
-                    _buildInp(context, hint: 'e.g. Home, Office'),
-                    const SizedBox(height: 14),
-                    _buildLbl(context, 'STREET ADDRESS'),
-                    _buildInp(context, hint: '123 Bakery Street'),
-                    const SizedBox(height: 14),
-                    _buildLbl(context, 'CITY'),
-                    _buildInp(context, hint: 'London'),
-                    const SizedBox(height: 14),
-                    _buildLbl(context, 'POSTCODE'),
-                    _buildInp(context, hint: 'W1F 0TH'),
-                    const SizedBox(height: 20),
-                    _buildLbl(context, 'ADDRESS TYPE'),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text('🏠 Delivery',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                    ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onTertiary,
-                                        fontSize: 13)),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).dividerColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text('🏪 Pickup',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                    ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                        fontSize: 13)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                      _buildLbl(context, 'SELECT ICON'),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: _icons
+                            .map(
+                              (icon) => Expanded(
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      setState(() => _selectedIcon = icon),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                    margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      color: _selectedIcon == icon
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withValues(alpha: 0.15)
+                                          : Theme.of(context).dividerColor,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: _selectedIcon == icon
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                            : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(icon,
+                                        style: const TextStyle(fontSize: 24)),
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: PrimaryButton(
-                  label: 'Save Address', onTap: () => context.pop()),
+              child: PrimaryButton(label: 'Save Address', onTap: _saveAddress),
             ),
           ],
         ),
@@ -965,19 +1110,64 @@ class AddNewAddressScreen extends StatelessWidget {
               .labelSmall
               ?.copyWith(fontSize: 11, letterSpacing: 0.5)));
 
-  Widget _buildInp(BuildContext context, {required String hint}) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Theme.of(context).dividerColor, width: 1.5),
+  Widget _buildTextField(
+    BuildContext context, {
+    required TextEditingController controller,
+    required String hint,
+    String? Function(String?)? validator,
+  }) =>
+      TextFormField(
+        controller: controller,
+        validator: validator,
+        decoration: InputDecoration(
+          hintText: hint,
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
-        child: Text(hint,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: Theme.of(context).colorScheme.outline)),
+        style: Theme.of(context).textTheme.bodyMedium,
       );
+}
+
+class _TypeButton extends StatelessWidget {
+  final String icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _TypeButton({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(context).colorScheme.onSurface
+              : Theme.of(context).dividerColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.center,
+        child: Text('$icon $label',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onTertiary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                )),
+      ),
+    );
+  }
 }
 
 // ── Shared private ────────────────────────────────────────────────────────────

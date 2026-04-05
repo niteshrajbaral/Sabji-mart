@@ -151,7 +151,7 @@ class _RecentOrdersScreenState extends State<RecentOrdersScreen>
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      'Rs ${totalSpent.toStringAsFixed(2)}',
+                                      'Rs ${totalSpent.toStringAsFixed(0)}',
                                       style: Theme.of(context)
                                           .textTheme
                                           .displayLarge

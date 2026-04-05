@@ -18,17 +18,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
   late Animation<double> _scaleAnim;
   late Animation<double> _fadeAnim;
 
-  // Made non-const to allow DateTime.now() evaluation
-  late final List<({String desc, String icon, String label})> _steps = [
-    (icon: '✅', label: 'Order Confirmed', desc: 'We have received your order'),
-    (icon: '👩‍🍳', label: 'Preparing', desc: 'Our staffs are at work'),
-    (
-      icon: '🎁',
-      label: 'Ready for Pickup',
-      desc:
-          'Your order will be ready at ${DateFormat('h:mm a').format(DateTime.now().add(const Duration(minutes: 25)))}'
-    ),
-  ];
 
   @override
   void initState() {
@@ -61,20 +50,39 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
 
     // Localized steps
     final List<({String desc, String icon, String label})> localizedSteps = [
-      (icon: '✅', label: l10n.orderConfirmed, desc: l10n.orderConfirmedDesc),
-      (icon: '👩‍🍳', label: l10n.preparing, desc: l10n.preparingDesc),
+      (icon: '', label: l10n.orderConfirmed, desc: l10n.orderConfirmedDesc),
+      (icon: '', label: l10n.preparing, desc: l10n.preparingDesc),
       (
-        icon: '🎁',
+        icon: '',
         label: l10n.readyForPickup,
         desc:
             '${l10n.readyForPickupDesc} ${DateFormat('h:mm a').format(DateTime.now().add(const Duration(minutes: 25)))}'
       ),
     ];
 
-    return Scaffold(
+    // Navigate to target location, resetting the cart branch stack first
+    void navigateAway(String targetPath) {
+      // First navigate to cart root to reset the branch's navigation stack,
+      // then navigate to the target location.
+      context.go('/cart');
+      // Small delay to allow the branch state to reset
+      final router = GoRouter.of(context);
+      Future.delayed(const Duration(milliseconds: 50), () {
+        router.go(targetPath);
+      });
+    }
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          navigateAway('/home');
+        }
+      },
+      child: Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
@@ -230,14 +238,18 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                   ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 32),
               PrimaryButton(
-                label: l10n.trackMyOrder,
-                onTap: () => context.go('/profile/orders'),
+                label: l10n.recentOrders,
+                onTap: () {
+                  navigateAway('/profile/orders');
+                },
               ),
               const SizedBox(height: 12),
               GestureDetector(
-                onTap: () => context.go('/home'),
+                onTap: () {
+                  navigateAway('/home');
+                },
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -253,6 +265,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
           ),
         ),
       ),
+    ),
     );
   }
 }

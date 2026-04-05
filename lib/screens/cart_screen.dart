@@ -25,7 +25,10 @@ class CartScreen extends StatelessWidget {
       builder: (_) => AddressBottomSheet(
         selectedId: context.read<AddressProvider>().selectedId,
         onSelect: (id) => context.read<AddressProvider>().select(id),
-        onAddNew: () => Navigator.pop(context),
+        onAddNew: () {
+          Navigator.pop(context);
+          context.push('/profile/addresses/add');
+        },
       ),
     );
   }

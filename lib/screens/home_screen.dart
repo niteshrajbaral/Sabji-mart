@@ -68,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen>
         onSelect: (id) => context.read<AddressProvider>().select(id),
         onAddNew: () {
           Navigator.pop(context);
-          // navigate to add address handled by parent router
+          context.push('/profile/addresses/add');
         },
       ),
     );
