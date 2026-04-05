@@ -27,7 +27,7 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  int _quantity = 0;
+  int _quantity = 1;
   int _activeImage = 0;
   int _selectedVariantIndex = 0;
   // Track selected quantity for each addon by its index
@@ -63,8 +63,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final cartItem = context
-          .read<CartProvider>()
+      final cartProvider = context.read<CartProvider>();
+      final cartItem = cartProvider
           .items
           .where((i) => i.product.id == widget.product.id)
           .firstOrNull;
@@ -72,6 +72,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         setState(() {
           _quantity = cartItem.quantity;
         });
+      } else if (mounted) {
+        // Auto-add product to cart with quantity 1 on opening
+        setState(() {
+          _quantity = 1;
+        });
+        cartProvider.addProduct(widget.product, quantity: 1);
       }
     });
   }
@@ -567,7 +573,7 @@ class _VariantItem extends StatelessWidget {
               ),
             ),
             Text(
-              'Rs ${price.toStringAsFixed(2)}',
+              'Rs ${price.toStringAsFixed(0)}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: !isAvailable
                         ? Theme.of(context).dividerColor
@@ -631,7 +637,7 @@ class _AddonItem extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 Text(
-                  'Rs ${addon.price.toStringAsFixed(2)}',
+                  'Rs ${addon.price.toStringAsFixed(0)}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w500,
@@ -756,7 +762,7 @@ class _OptionItem extends StatelessWidget {
               ),
             ),
             Text(
-              price == 0 ? AppLocalizations.of(context)!.free : '+ Rs ${price.toStringAsFixed(2)}',
+              price == 0 ? AppLocalizations.of(context)!.free : '+ Rs ${price.toStringAsFixed(0)}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: isActive
                         ? Theme.of(context).colorScheme.primary

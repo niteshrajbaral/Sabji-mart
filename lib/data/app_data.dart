@@ -228,22 +228,22 @@ abstract final class AppData {
     ),
   ];
 
-  static const List<Address> savedAddresses = [
-    Address(
+  static List<Address> _savedAddresses = [
+    const Address(
       id: 1,
       label: 'Central Depot',
       address: '12 Market Way, Flemington, VIC 3031',
       icon: '🏭',
       type: 'Pickup',
     ),
-    Address(
+    const Address(
       id: 2,
       label: 'City Restaurant',
       address: '88 Collins Street, Melbourne, VIC 3000',
       icon: '🍽️',
       type: 'Delivery',
     ),
-    Address(
+    const Address(
       id: 3,
       label: 'Supermarket Hub',
       address: '240 Bourke Road, Hawthorn, VIC 3122',
@@ -251,6 +251,28 @@ abstract final class AppData {
       type: 'Delivery',
     ),
   ];
+
+  static List<Address> get savedAddresses => _savedAddresses;
+
+  static int get nextId {
+    if (_savedAddresses.isEmpty) return 1;
+    return _savedAddresses.map((a) => a.id).reduce((a, b) => a > b ? a : b) + 1;
+  }
+
+  static void addAddress(Address address) {
+    _savedAddresses.add(address);
+  }
+
+  static void removeAddress(int id) {
+    _savedAddresses.removeWhere((a) => a.id == id);
+  }
+
+  static void updateAddress(Address updatedAddress) {
+    final index = _savedAddresses.indexWhere((a) => a.id == updatedAddress.id);
+    if (index != -1) {
+      _savedAddresses[index] = updatedAddress;
+    }
+  }
 
   static const List<String> dietaryFilterOptions = [
     'Organic',
