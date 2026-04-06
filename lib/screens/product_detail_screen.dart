@@ -77,7 +77,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         setState(() {
           _quantity = 1;
         });
-        cartProvider.addProduct(widget.product, quantity: 1);
+        // Pass variant price and name if a variant is selected
+        final variantItem = _selectedVariantItem;
+        cartProvider.addProduct(
+          widget.product,
+          quantity: 1,
+          variantPrice: variantItem?.price,
+          variantName: variantItem != null ? _getVariantDisplayName(variantItem) : null,
+        );
       }
     });
   }
@@ -441,14 +448,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               if (cart.contains(widget.product)) {
                 cart.updateById(widget.product.id, _quantity);
               } else {
-                cart.addProduct(widget.product, quantity: _quantity);
+                // Pass variant price and name if a variant is selected
+                final variantItem = _selectedVariantItem;
+                cart.addProduct(
+                  widget.product,
+                  quantity: _quantity,
+                  variantPrice: variantItem?.price,
+                  variantName: variantItem != null ? _getVariantDisplayName(variantItem) : null,
+                );
               }
             },
             onCheckout: () {
               if (_quantity > 0) {
                 final cart = context.read<CartProvider>();
                 if (!cart.contains(widget.product)) {
-                  cart.addProduct(widget.product, quantity: _quantity);
+                  // Pass variant price and name if a variant is selected
+                  final variantItem = _selectedVariantItem;
+                  cart.addProduct(
+                    widget.product,
+                    quantity: _quantity,
+                    variantPrice: variantItem?.price,
+                    variantName: variantItem != null ? _getVariantDisplayName(variantItem) : null,
+                  );
                 }
                 context.push('/cart');
               } else {

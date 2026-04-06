@@ -49,11 +49,11 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
     final l10n = AppLocalizations.of(context)!;
 
     // Localized steps
-    final List<({String desc, String icon, String label})> localizedSteps = [
-      (icon: '', label: l10n.orderConfirmed, desc: l10n.orderConfirmedDesc),
-      (icon: '', label: l10n.preparing, desc: l10n.preparingDesc),
+    final List<({String desc, IconData icon, String label})> localizedSteps = [
+      (icon: Icons.check_circle_rounded, label: l10n.orderConfirmed, desc: l10n.orderConfirmedDesc),
+      (icon: Icons.restaurant_menu_rounded, label: l10n.preparing, desc: l10n.preparingDesc),
       (
-        icon: '',
+        icon: Icons.local_shipping_rounded,
         label: l10n.readyForPickup,
         desc:
             '${l10n.readyForPickupDesc} ${DateFormat('h:mm a').format(DateTime.now().add(const Duration(minutes: 25)))}'
@@ -127,11 +127,20 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                 opacity: _fadeAnim,
                 child: Column(
                   children: [
-                    Text('🎉 ${l10n.orderPlaced}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .displayLarge
-                            ?.copyWith(fontSize: 26)),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.celebration_rounded, 
+                            color: Theme.of(context).colorScheme.primary, 
+                            size: 28),
+                        const SizedBox(width: 8),
+                        Text(l10n.orderPlaced,
+                            style: Theme.of(context)
+                                .textTheme
+                                .displayLarge
+                                ?.copyWith(fontSize: 26)),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       '#OD-2849 • ${l10n.estReadyAt} 11:00 AM',
@@ -189,8 +198,11 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 alignment: Alignment.center,
-                                child: Text(s.icon,
-                                    style: const TextStyle(fontSize: 18)),
+                                child: Icon(s.icon, 
+                                    size: 18,
+                                    color: isActive 
+                                        ? Theme.of(context).colorScheme.primary 
+                                        : Theme.of(context).colorScheme.onSurfaceVariant),
                               ),
                               const SizedBox(width: 12),
                               Expanded(

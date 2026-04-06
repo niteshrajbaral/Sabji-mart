@@ -108,7 +108,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myProfile => 'My Profile';
 
   @override
-  String get croissantMember => '🥐 Croissant Member';
+  String get vipMember => '🌟 VIP Member';
 
   @override
   String get ordersHistory => 'ORDERS & HISTORY';

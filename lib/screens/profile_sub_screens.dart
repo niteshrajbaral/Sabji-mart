@@ -4,12 +4,9 @@ import '../../components/primary_button.dart';
 import '../data/app_data.dart';
 import 'package:go_router/go_router.dart';
 import '../components/app_back_button.dart';
-import '../../components/service_icon.dart';
 import 'package:provider/provider.dart';
-import '../providers/locale_provider.dart';
 import '../providers/address_provider.dart';
 import '../models/address.dart';
-import '../l10n/app_localizations.dart';
 
 // ── Edit Profile ──────────────────────────────────────────────────────────────
 
@@ -446,20 +443,20 @@ class PaymentMethodsScreen extends StatelessWidget {
                 children: [
                   // Card
                   _PaymentCard(
-                    icon: '💳',
+                    icon: Icons.credit_card_rounded,
                     label: 'Visa ending in 4289',
                     sub: 'Expires 09/27',
                     isDefault: true,
                   ),
                   const SizedBox(height: 10),
                   _PaymentCard(
-                    icon: '🍎',
+                    icon: Icons.apple_rounded,
                     label: 'Apple Pay',
                     sub: 'Express checkout',
                   ),
                   const SizedBox(height: 10),
                   _PaymentCard(
-                    icon: '🅿️',
+                    icon: Icons.account_balance_rounded,
                     label: 'PayPal',
                     sub: 'sophie@email.com',
                   ),
@@ -494,7 +491,7 @@ class PaymentMethodsScreen extends StatelessWidget {
 }
 
 class _PaymentCard extends StatelessWidget {
-  final String icon;
+  final IconData icon;
   final String label;
   final String sub;
   final bool isDefault;
@@ -516,49 +513,57 @@ class _PaymentCard extends StatelessWidget {
         side: BorderSide(color: Theme.of(context).dividerColor, width: 1.5),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: ServiceIcon(
-          icon: icon,
-          size: 48,
-          iconSize: 22,
-          borderRadius: 16,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(
+            icon,
+            color: Theme.of(context).colorScheme.primary,
+            size: 20,
+          ),
         ),
-        title: Row(
-          children: [
-            Text(label,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(fontWeight: FontWeight.w500)),
-            if (isDefault) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Text('Default',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w500)),
-              ),
-            ],
-          ],
+        title: Text(
+          label,
+          style: Theme.of(context)
+              .textTheme
+              .bodyLarge
+              ?.copyWith(fontWeight: FontWeight.w500, fontSize: 14),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(sub,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(fontSize: 12)),
+          padding: const EdgeInsets.only(top: 2),
+          child: Text(
+            sub,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(fontSize: 11),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-        trailing: Icon(Icons.more_vert_rounded,
-            color: Theme.of(context).colorScheme.outline, size: 20),
+        trailing: isDefault
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Default',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 11),
+                ),
+              )
+            : null,
       ),
     );
   }
@@ -747,136 +752,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ],
         ],
       ),
-    );
-  }
-}
-
-// ── Settings ──────────────────────────────────────────────────────────────────
-
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _darkMode = false;
-  bool _haptics = true;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final localeProvider = Provider.of<LocaleProvider>(context);
-
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-              child: Row(
-                children: [
-                  const AppBackButton(),
-                  const SizedBox(width: 12),
-                  Text(l10n.settings,
-                      style: Theme.of(context).textTheme.headlineLarge),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
-                children: [
-                  _SectionLabel(l10n.appearance),
-                  const SizedBox(height: 8),
-                  _ToggleCard(children: [
-                    _buildToggle('🌙', l10n.darkMode, l10n.comingSoon, _darkMode,
-                        (v) => setState(() => _darkMode = v),
-                        disabled: true),
-                    _buildToggle('📱', l10n.hapticFeedback, null, _haptics,
-                        (v) => setState(() => _haptics = v),
-                        showDivider: false),
-                  ]),
-                  const SizedBox(height: 16),
-                  _SectionLabel(l10n.language),
-                  const SizedBox(height: 8),
-                  _ToggleCard(children: [
-                    _buildToggle(
-                      '🌐',
-                      l10n.language,
-                      localeProvider.locale.languageCode == 'en'
-                          ? l10n.english
-                          : l10n.nepali,
-                      localeProvider.locale.languageCode == 'ne',
-                      (v) => localeProvider.toggleLocale(),
-                      showDivider: false,
-                    ),
-                  ]),
-                  const SizedBox(height: 16),
-                  _SectionLabel(l10n.data),
-                  const SizedBox(height: 8),
-                  _ToggleCard(children: [
-                    _buildLinkRow('🗑️', l10n.clearCache, '2.3 MB'),
-                    _buildLinkRow('📊', l10n.dataPrivacy, null,
-                        showDivider: false),
-                  ]),
-                  const SizedBox(height: 16),
-                  _SectionLabel(l10n.about),
-                  const SizedBox(height: 8),
-                  _ToggleCard(children: [
-                    _buildLinkRow('✨', l10n.version, '2.1.0'),
-                    _buildLinkRow('📋', l10n.termsOfService, null),
-                    _buildLinkRow('🔒', l10n.privacyPolicy, null,
-                        showDivider: false),
-                  ]),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildToggle(String icon, String label, String? sub, bool value,
-      ValueChanged<bool> onChanged,
-      {bool showDivider = true, bool disabled = false}) {
-    return _ToggleRow(
-      icon: icon,
-      label: label,
-      sub: sub,
-      value: value,
-      onChanged: onChanged,
-      showDivider: showDivider,
-      disabled: disabled,
-    );
-  }
-
-  Widget _buildLinkRow(String icon, String label, String? valueText,
-      {bool showDivider = true}) {
-    return Column(
-      children: [
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(vertical: 2),
-          leading: ServiceIcon(
-            icon: icon,
-          ),
-          title: Text(label, style: Theme.of(context).textTheme.bodyLarge),
-          trailing: valueText != null
-              ? Text(valueText,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(fontSize: 13))
-              : Icon(Icons.chevron_right_rounded,
-                  color: Theme.of(context).colorScheme.outline, size: 20),
-          onTap: () {},
-        ),
-        if (showDivider) Divider(height: 0),
-      ],
     );
   }
 }
@@ -1184,80 +1059,5 @@ class _SectionLabel extends StatelessWidget {
             .textTheme
             .labelSmall
             ?.copyWith(letterSpacing: 1, fontSize: 11));
-  }
-}
-
-class _ToggleCard extends StatelessWidget {
-  final List<Widget> children;
-
-  const _ToggleCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Column(children: children),
-    );
-  }
-}
-
-class _ToggleRow extends StatelessWidget {
-  final String icon;
-  final String label;
-  final String? sub;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  final bool showDivider;
-  final bool disabled;
-
-  const _ToggleRow({
-    required this.icon,
-    required this.label,
-    required this.sub,
-    required this.value,
-    required this.onChanged,
-    this.showDivider = true,
-    this.disabled = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SwitchListTile(
-          contentPadding: const EdgeInsets.symmetric(vertical: 2),
-          value: value,
-          onChanged: disabled ? null : onChanged,
-          activeThumbColor: Theme.of(context).cardColor,
-          activeTrackColor: Theme.of(context).colorScheme.primary,
-          inactiveThumbColor: Theme.of(context).cardColor,
-          inactiveTrackColor: Theme.of(context).dividerColor,
-          title: Text(label, style: Theme.of(context).textTheme.bodyLarge),
-          subtitle: sub != null
-              ? Text(sub!,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(fontSize: 12))
-              : null,
-          secondary: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: Theme.of(context).dividerColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            alignment: Alignment.center,
-            child: Text(icon, style: const TextStyle(fontSize: 18)),
-          ),
-        ),
-        if (showDivider) Divider(height: 0),
-      ],
-    );
   }
 }
