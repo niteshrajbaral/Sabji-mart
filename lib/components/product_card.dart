@@ -25,9 +25,15 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final qty = context.select<CartProvider, int>((cart) => cart.items
-        .where((i) => i.product.id == product.id)
-        .fold(0, (sum, i) => sum + i.quantity));
+    final cartData = context.select<CartProvider, (int, double?)>((cart) {
+      final items = cart.items.where((i) => i.product.id == product.id).toList();
+      final qty = items.fold(0, (sum, i) => sum + i.quantity);
+      // Get the variant price from the first matching cart item (if any)
+      final variantPrice = items.isNotEmpty ? items.first.variantPrice : null;
+      return (qty, variantPrice);
+    });
+    final qty = cartData.$1;
+    final variantPrice = cartData.$2;
 
     return GestureDetector(
       onTap: onTap,
@@ -98,9 +104,8 @@ class ProductCard extends StatelessWidget {
                             child: Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                'Rs ${product.price.toStringAsFixed(0)}',
+                                'Rs ${(variantPrice ?? product.price).toStringAsFixed(0)}',
                                 style: AppTextStyles.price,
-                                // overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ),

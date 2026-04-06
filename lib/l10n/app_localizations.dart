@@ -296,11 +296,11 @@ abstract class AppLocalizations {
   /// **'My Profile'**
   String get myProfile;
 
-  /// No description provided for @croissantMember.
+  /// No description provided for @vipMember.
   ///
   /// In en, this message translates to:
-  /// **'🥐 Croissant Member'**
-  String get croissantMember;
+  /// **'🌟 VIP Member'**
+  String get vipMember;
 
   /// No description provided for @ordersHistory.
   ///

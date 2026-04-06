@@ -181,7 +181,7 @@ class _Step1 extends StatelessWidget {
         const SizedBox(height: 12),
         _InfoTile(
           label: '${isPickup ? l10n.pickup : l10n.delivery} ${l10n.timeLabel}',
-          icon: '🕐',
+          icon: Icons.access_time_rounded,
           title:
               'Today, ${DateFormat('h:mm a').format(DateTime.now().add(const Duration(minutes: 25)))}',
           subtitle: null,
@@ -226,7 +226,7 @@ class _Step1 extends StatelessWidget {
 
 class _InfoTile extends StatelessWidget {
   final String label;
-  final String icon;
+  final dynamic icon;
   final String title;
   final String? subtitle;
 
@@ -253,7 +253,10 @@ class _InfoTile extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Text(icon, style: const TextStyle(fontSize: 16)),
+                if (icon is String)
+                  Text(icon as String, style: const TextStyle(fontSize: 16)),
+                if (icon is IconData)
+                  Icon(icon as IconData, size: 16, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -306,10 +309,10 @@ class _Step2 extends StatelessWidget {
     final textTheme = theme.textTheme;
     final l10n = AppLocalizations.of(context)!;
 
-    final List<({String icon, String label, String sub})> methods = [
-      (icon: '💳', label: '•••• 4289', sub: '${l10n.visaEnding} 4289'),
-      (icon: '🍎', label: l10n.applePay, sub: l10n.expressCheckout),
-      (icon: '💵', label: l10n.cashLabel, sub: l10n.payOnDelivery),
+    final List<({IconData icon, String label, String sub})> methods = [
+      (icon: Icons.credit_card_rounded, label: '•••• 4289', sub: '${l10n.visaEnding} 4289'),
+      (icon: Icons.apple_rounded, label: l10n.applePay, sub: l10n.expressCheckout),
+      (icon: Icons.money_rounded, label: l10n.cashLabel, sub: l10n.payOnDelivery),
     ];
 
     return Column(
@@ -380,24 +383,29 @@ class _Step2 extends StatelessWidget {
                 children: [
                   Expanded(
                       flex: 4,
-                      child:
-                          Text(item.product.name, style: textTheme.bodySmall)),
+                      child: Text(
+                        item.product.name,
+                        style: textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      )),
                   Expanded(
                       child: Text('x ${item.quantity}',
                           textAlign: TextAlign.center,
                           style: textTheme.bodySmall)),
                   Expanded(
                       flex: 2,
-                      child: Text(item.product.price.toStringAsFixed(0),
-                          textAlign: TextAlign.right,
-                          style: textTheme.bodySmall)),
+                      child: Text(
+                        item.effectivePrice.toStringAsFixed(0),
+                        textAlign: TextAlign.right,
+                        style: textTheme.bodySmall,
+                      )),
                   Expanded(
                       flex: 2,
                       child: Text(
-                          (item.product.price * item.quantity)
-                              .toStringAsFixed(0),
-                          textAlign: TextAlign.right,
-                          style: textTheme.bodySmall)),
+                        (item.effectivePrice * item.quantity).toStringAsFixed(0),
+                        textAlign: TextAlign.right,
+                        style: textTheme.bodySmall,
+                      )),
                 ],
               ),
             )),
@@ -504,9 +512,9 @@ class _Step2 extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 8),
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Row(
+                  child: Row(
                   children: [
-                    Text(m.icon, style: const TextStyle(fontSize: 20)),
+                    Icon(m.icon, size: 20, color: colorScheme.primary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(

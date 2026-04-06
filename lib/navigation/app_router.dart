@@ -169,10 +169,6 @@ final router = GoRouter(
                   builder: (context, state) => const NotificationsScreen(),
                 ),
                 GoRoute(
-                  path: 'settings',
-                  builder: (context, state) => const SettingsScreen(),
-                ),
-                GoRoute(
                   path: 'orders',
                   builder: (context, state) => const RecentOrdersScreen(),
                 ),

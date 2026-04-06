@@ -15,6 +15,7 @@ class OfferSlider extends StatefulWidget {
 
 class _OfferSliderState extends State<OfferSlider> {
   final PageController _pageController = PageController();
+  
   int _currentPage = 0;
   Timer? _timer;
 
@@ -116,6 +117,7 @@ class _OfferSliderState extends State<OfferSlider> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return Consumer<ProductProvider>(
       builder: (context, productProvider, child) {
         // Build offers whenever products change
@@ -284,8 +286,8 @@ class _OfferSliderState extends State<OfferSlider> {
                                               ? ClipOval(
                                                   child: Image.network(
                                                     offer['image']!,
-                                                    width: 70,
-                                                    height: 70,
+                                                    width: width>800?90:70,
+                                                    height: width>800?90:70,
                                                     fit: BoxFit.cover,
                                                     errorBuilder: (context, error, stackTrace) {
                                                       return const Icon(Icons.image, size: 70, color: Colors.white70);

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../components/loyalty_card.dart';
 import '../../theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/locale_provider.dart';
 
 import 'package:go_router/go_router.dart';
 import '../../components/service_icon.dart';
@@ -81,7 +83,7 @@ class ProfileScreen extends StatelessWidget {
                                 .withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(l10n.croissantMember,
+                          child: Text(l10n.vipMember,
                               style: Theme.of(context)
                                   .textTheme
                                   .labelMedium
@@ -111,12 +113,12 @@ class ProfileScreen extends StatelessWidget {
           _SectionHeader(label: l10n.ordersHistory),
           const SizedBox(height: 8),
           _MenuTile(
-              icon: '📦',
+              icon: Icons.local_shipping_outlined,
               label: l10n.myOrders,
               sub: l10n.recentOrdersSub,
               onTap: () => context.push('/profile/orders')),
           _MenuTile(
-              icon: '❤️',
+              icon: Icons.favorite_border_outlined,
               label: l10n.favourites,
               sub: l10n.savedItemsSub,
               onTap: () => context.push('/profile/favourites')),
@@ -124,12 +126,12 @@ class ProfileScreen extends StatelessWidget {
           _SectionHeader(label: l10n.account),
           const SizedBox(height: 8),
           _MenuTile(
-              icon: '📍',
+              icon: Icons.location_on_outlined,
               label: l10n.savedAddresses,
               sub: l10n.manageLocationsSub,
               onTap: () => context.push('/profile/addresses')),
           _MenuTile(
-              icon: '💳',
+              icon: Icons.credit_card_outlined,
               label: l10n.paymentMethods,
               sub: l10n.cardsWalletsSub,
               onTap: () => context.push('/profile/payments')),
@@ -137,15 +139,22 @@ class ProfileScreen extends StatelessWidget {
           _SectionHeader(label: l10n.preferences),
           const SizedBox(height: 8),
           _MenuTile(
-              icon: '🔔',
+              icon: Icons.notifications_outlined,
               label: l10n.notifications,
               sub: l10n.pushEmailSub,
               onTap: () => context.push('/profile/notifications')),
-          _MenuTile(
-              icon: '⚙️',
-              label: l10n.settings,
-              sub: l10n.settingsSub,
-              onTap: () => context.push('/profile/settings')),
+          const SizedBox(height: 16),
+          _SectionHeader(label: l10n.language),
+          const SizedBox(height: 8),
+          Consumer<LocaleProvider>(
+            builder: (context, localeProvider, _) {
+              final isNepali = localeProvider.locale.languageCode == 'ne';
+              return _LanguageToggle(
+                isNepali: isNepali,
+                onToggle: () => localeProvider.toggleLocale(),
+              );
+            },
+          ),
           const SizedBox(height: 20),
 
           // Sign out
@@ -163,7 +172,8 @@ class ProfileScreen extends StatelessWidget {
               child: Row(
                 children: [
                   ServiceIcon(
-                    icon: '👋',
+                    icon: Icons.logout_outlined,
+                    iconColor: Theme.of(context).colorScheme.error,
                     backgroundColor:
                         Theme.of(context).colorScheme.errorContainer,
                   ),
@@ -197,7 +207,7 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _MenuTile extends StatelessWidget {
-  final String icon;
+  final dynamic icon;
   final String label;
   final String? sub;
   final VoidCallback? onTap;
@@ -236,6 +246,56 @@ class _MenuTile extends StatelessWidget {
             Icon(Icons.chevron_right_rounded,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageToggle extends StatelessWidget {
+  final bool isNepali;
+  final VoidCallback onToggle;
+
+  const _LanguageToggle({required this.isNepali, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return GestureDetector(
+      onTap: onToggle,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            ServiceIcon(
+              icon: Icons.language_outlined,
+              size: 44,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.language,
+                      style: Theme.of(context).textTheme.bodyLarge),
+                  Text(
+                    isNepali ? l10n.nepali : l10n.english,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: isNepali,
+              onChanged: (_) => onToggle(),
+              activeThumbColor: Theme.of(context).colorScheme.onPrimary,
+              activeTrackColor: Theme.of(context).colorScheme.primary,
+            ),
           ],
         ),
       ),

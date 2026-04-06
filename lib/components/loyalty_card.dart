@@ -12,7 +12,7 @@ class LoyaltyCard extends StatefulWidget {
     super.key,
     this.points = 340,
     this.nextRewardAt = 500,
-    this.nextRewardName = 'Free Croissant',
+    this.nextRewardName = 'Free Delivery',
   });
 
   @override
@@ -132,8 +132,8 @@ class _LoyaltyCardState extends State<LoyaltyCard>
             ),
             child: Row(
               children: [
-                const Text('🥐', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 10),
+                // const Text('🥐', style: TextStyle(fontSize: 18)),
+                // const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +147,7 @@ class _LoyaltyCardState extends State<LoyaltyCard>
                         ),
                       ),
                       Text(
-                        'Then 🎂 Free Slice at 750 · 👑 VIP at 1000',
+                        'Then Free delivery at 750',
                         style: AppTextStyles.caption.copyWith(
                             color: AppColors.white.withValues(alpha: 0.4)),
                       ),

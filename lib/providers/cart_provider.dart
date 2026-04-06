@@ -12,7 +12,7 @@ class CartProvider extends ChangeNotifier {
   int get totalCount => _items.fold(0, (sum, i) => sum + i.quantity);
 
   double get subtotal =>
-      _items.fold(0.0, (sum, i) => sum + i.product.price * i.quantity);
+      _items.fold(0.0, (sum, i) => sum + i.effectivePrice * i.quantity);
 
   static const double deliveryFee = 130;
   double get total => subtotal + deliveryFee;
@@ -20,12 +20,24 @@ class CartProvider extends ChangeNotifier {
   bool contains(Product product) =>
       _items.any((i) => i.product.id == product.id);
 
-  void addProduct(Product product, {int quantity = 1}) {
+  void addProduct(
+    Product product, {
+    int quantity = 1,
+    double? variantPrice,
+    String? variantName,
+  }) {
     final index = _items.indexWhere((i) => i.product.id == product.id);
     if (index >= 0) {
+      // If the product is already in the cart, update quantity
+      // Note: We don't update variant info if product already exists
       _items[index].quantity += quantity;
     } else {
-      _items.add(CartItem(product: product, quantity: quantity));
+      _items.add(CartItem(
+        product: product,
+        quantity: quantity,
+        variantPrice: variantPrice,
+        variantName: variantName,
+      ));
     }
     notifyListeners();
   }

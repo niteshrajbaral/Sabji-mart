@@ -109,7 +109,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get myProfile => 'मेरो प्रोफाइल';
 
   @override
-  String get croissantMember => '🥐 क्रोइसाँ सदस्य';
+  String get vipMember => '🌟 VIP सदस्य';
 
   @override
   String get ordersHistory => 'अर्डर र इतिहास';
