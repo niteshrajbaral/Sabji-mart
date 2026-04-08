@@ -108,7 +108,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myProfile => 'My Profile';
 
   @override
-  String get vipMember => '🌟 VIP Member';
+  String get vipMember => '🌟 Elite Member';
 
   @override
   String get ordersHistory => 'ORDERS & HISTORY';
@@ -400,4 +400,76 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bundleInfo =>
       'This is a bundled offer. When you add this to your cart, you\'ll receive all the items listed above in the specified quantities.';
+
+  @override
+  String get login => 'Login';
+
+  @override
+  String get register => 'Register';
+
+  @override
+  String get welcomeBack => 'Welcome Back!';
+
+  @override
+  String get createAccount => 'Create Account';
+
+  @override
+  String get loginSubtitle => 'Sign in to continue to checkout';
+
+  @override
+  String get registerSubtitle => 'Create an account to get started';
+
+  @override
+  String get nameRequired => 'Please enter your name';
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String get emailRequired => 'Please enter your email';
+
+  @override
+  String get emailInvalid => 'Please enter a valid email';
+
+  @override
+  String get password => 'Password';
+
+  @override
+  String get passwordRequired => 'Please enter your password';
+
+  @override
+  String get passwordTooShort => 'Password must be at least 6 characters';
+
+  @override
+  String get confirmPassword => 'Confirm Password';
+
+  @override
+  String get confirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get forgotPassword => 'Forgot Password?';
+
+  @override
+  String get or => 'or';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get continueWithApple => 'Continue with Apple';
+
+  @override
+  String get dontHaveAccount => 'Don\'t have an account?';
+
+  @override
+  String get alreadyHaveAccount => 'Already have an account?';
+
+  @override
+  String get loginToContinue => 'Login to Continue';
+
+  @override
+  String get loginRequired => 'Please login or register to complete your order';
 }

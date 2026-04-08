@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../models/address.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/address_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 import 'package:intl/intl.dart';
 import '../../components/primary_button.dart';
 import '../../components/empty_cart_view.dart';
@@ -87,27 +89,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ],
                   ),
 
-                  // CTA Button
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: PrimaryButton(
-                      label: _step < 2
-                          ? l10n.continueBtn
-                          : '${l10n.placeOrder} — Rs ${cart.total.toStringAsFixed(0)}',
-                      onTap: () {
-                        if (_step < 2) {
-                          setState(() => _step++);
-                        } else {
-                          // Clear the cart before navigating to success screen
-                          cart.clear();
-                          // Navigate to success screen
-                          context.go('/cart/checkout/success');
-                        }
-                      },
-                    ),
-                  ),
+                      // CTA Button
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: PrimaryButton(
+                          label: _step < 2
+                              ? l10n.continueBtn
+                              : '${l10n.placeOrder} — Rs ${cart.total.toStringAsFixed(0)}',
+                          onTap: () {
+                            if (_step < 2) {
+                              setState(() => _step++);
+                            } else {
+                              // Navigate to login screen before order success
+                              context.go('/cart/checkout/login');
+                            }
+                          },
+                        ),
+                      ),
                 ],
               ),
       ),
@@ -156,14 +156,32 @@ class _StepIndicator extends StatelessWidget {
   }
 }
 
-class _Step1 extends StatelessWidget {
+class _Step1 extends StatefulWidget {
   final dynamic addr;
 
   const _Step1({required this.addr, super.key});
 
   @override
+  State<_Step1> createState() => _Step1State();
+}
+
+class _Step1State extends State<_Step1> {
+  void _showAddressSheet() {
+    final addrProv = context.read<AddressProvider>();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AddressBottomSheet(
+        selectedId: addrProv.selectedId,
+        onSelect: (id) => addrProv.select(id),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final addr = widget.addr;
     final isPickup = addr.type == 'Pickup';
 
     return Column(
@@ -172,11 +190,15 @@ class _Step1 extends StatelessWidget {
         Text('${isPickup ? l10n.pickup : l10n.delivery} ${l10n.details}',
             style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 16),
-        _InfoTile(
-          label: isPickup ? l10n.pickupLocation : l10n.deliveryAddress,
-          icon: addr.icon,
-          title: addr.label,
-          subtitle: addr.address,
+        GestureDetector(
+          onTap: _showAddressSheet,
+          child: _InfoTile(
+            label: isPickup ? l10n.pickupLocation : l10n.deliveryAddress,
+            icon: addr.icon,
+            title: addr.label,
+            subtitle: addr.address,
+            showChevron: true,
+          ),
         ),
         const SizedBox(height: 12),
         _InfoTile(
@@ -224,17 +246,119 @@ class _Step1 extends StatelessWidget {
   }
 }
 
+/// Address selection bottom sheet for checkout
+class _AddressBottomSheet extends StatelessWidget {
+  final int selectedId;
+  final ValueChanged<int> onSelect;
+
+  const _AddressBottomSheet({
+    required this.selectedId,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final addresses = context.watch<AddressProvider>().addresses;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      decoration: const BoxDecoration(
+        color: AppColors.warmWhite,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.beige,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text('Select ${addresses.any((a) => a.type == 'Pickup') ? 'Pickup Location' : 'Address'}',
+                style: AppTextStyles.headlineLarge.copyWith(fontSize: 18)),
+            const SizedBox(height: 16),
+            ...addresses.map((addr) {
+              final isSelected = addr.id == selectedId;
+              return GestureDetector(
+                onTap: () {
+                  onSelect(addr.id);
+                  Navigator.pop(context);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.beige : AppColors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected ? AppColors.darkBrown : AppColors.beige,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.darkBrown.withValues(alpha: 0.1)
+                              : AppColors.beige,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(addr.icon, style: const TextStyle(fontSize: 18)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(addr.label,
+                                style: AppTextStyles.bodyLarge
+                                    .copyWith(fontWeight: FontWeight.w500)),
+                            Text(addr.address,
+                                style: AppTextStyles.bodySmall.copyWith(fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      if (isSelected)
+                        const Icon(Icons.check_rounded,
+                            color: AppColors.sage, size: 20),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _InfoTile extends StatelessWidget {
   final String label;
   final dynamic icon;
   final String title;
   final String? subtitle;
+  final bool showChevron;
 
   const _InfoTile({
     required this.label,
     required this.icon,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
+    this.showChevron = false,
   });
 
   @override
@@ -279,6 +403,9 @@ class _InfoTile extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (showChevron)
+                  Icon(Icons.keyboard_arrow_down_rounded,
+                      color: Theme.of(context).colorScheme.primary, size: 20),
               ],
             ),
           ],
@@ -310,9 +437,8 @@ class _Step2 extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     final List<({IconData icon, String label, String sub})> methods = [
-      (icon: Icons.credit_card_rounded, label: '•••• 4289', sub: '${l10n.visaEnding} 4289'),
-      (icon: Icons.apple_rounded, label: l10n.applePay, sub: l10n.expressCheckout),
-      (icon: Icons.money_rounded, label: l10n.cashLabel, sub: l10n.payOnDelivery),
+      (icon: Icons.qr_code_2_rounded, label: 'QR Payment', sub: 'Scan to pay'),
+      (icon: Icons.money_rounded, label: 'Cash on Delivery', sub: l10n.payOnDelivery),
     ];
 
     return Column(
@@ -377,46 +503,85 @@ class _Step2 extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        ...cart.items.map((item) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                      flex: 4,
-                      child: Text(
-                        item.product.name,
-                        style: textTheme.bodySmall,
-                        overflow: TextOverflow.ellipsis,
-                      )),
-                  Expanded(
-                      child: Text('x ${item.quantity}',
-                          textAlign: TextAlign.center,
-                          style: textTheme.bodySmall)),
-                  Expanded(
-                      flex: 2,
-                      child: Text(
-                        item.effectivePrice.toStringAsFixed(0),
-                        textAlign: TextAlign.right,
-                        style: textTheme.bodySmall,
-                      )),
-                  Expanded(
-                      flex: 2,
-                      child: Text(
-                        (item.effectivePrice * item.quantity).toStringAsFixed(0),
-                        textAlign: TextAlign.right,
-                        style: textTheme.bodySmall,
-                      )),
-                ],
-              ),
-            )),
+        ...cart.items.map((item) {
+          final hasAddons = item.selectedAddonQuantities.isNotEmpty &&
+              item.selectedAddonQuantities.values.any((q) => q > 0);
+          
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                        flex: 4,
+                        child: Text(
+                          item.product.name,
+                          style: textTheme.bodySmall,
+                          overflow: TextOverflow.ellipsis,
+                        )),
+                    Expanded(
+                        child: Text('x ${item.quantity}',
+                            textAlign: TextAlign.center,
+                            style: textTheme.bodySmall)),
+                    Expanded(
+                        flex: 2,
+                        child: Text(
+                          item.effectivePrice.toStringAsFixed(0),
+                          textAlign: TextAlign.right,
+                          style: textTheme.bodySmall,
+                        )),
+                    Expanded(
+                        flex: 2,
+                        child: Text(
+                          (item.effectivePrice * item.quantity).toStringAsFixed(0),
+                          textAlign: TextAlign.right,
+                          style: textTheme.bodySmall,
+                        )),
+                  ],
+                ),
+                // Show addon details if any
+                if (hasAddons)
+                  ...item.selectedAddonQuantities.entries.where((e) => e.value > 0).map((entry) {
+                    final addonIndex = entry.key;
+                    final addonQty = entry.value;
+                    if (addonIndex < item.product.addons.length) {
+                      final addon = item.product.addons[addonIndex];
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 16, top: 2),
+                        child: Text(
+                          '  ${addon.name} x$addonQty - Rs ${(addon.price * addonQty).toStringAsFixed(0)}',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                            fontSize: 11,
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }),
+              ],
+            ),
+          );
+        }),
         const Divider(height: 32),
 
         // --- Totals ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(l10n.totalLabel, style: textTheme.bodyMedium),
-            Text('Rs ${cart.total.toStringAsFixed(0)}',
+            Text(l10n.subtotal, style: textTheme.bodyMedium),
+            Text('Rs ${cart.subtotal.toStringAsFixed(0)}',
+                style: textTheme.bodyMedium),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(l10n.deliveryFee, style: textTheme.bodyMedium),
+            Text('Rs ${CartProvider.deliveryFee.toStringAsFixed(0)}',
                 style: textTheme.bodyMedium),
           ],
         ),

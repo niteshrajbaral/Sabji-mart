@@ -25,18 +25,29 @@ class CartProvider extends ChangeNotifier {
     int quantity = 1,
     double? variantPrice,
     String? variantName,
+    Map<int, int> selectedAddonQuantities = const {},
   }) {
     final index = _items.indexWhere((i) => i.product.id == product.id);
     if (index >= 0) {
-      // If the product is already in the cart, update quantity
-      // Note: We don't update variant info if product already exists
+      // If the product is already in the cart, update quantity and selections
       _items[index].quantity += quantity;
+      // Update variant and addon selections if provided
+      if (variantPrice != null) {
+        _items[index].variantPrice = variantPrice;
+      }
+      if (variantName != null) {
+        _items[index].variantName = variantName;
+      }
+      if (selectedAddonQuantities.isNotEmpty) {
+        _items[index].selectedAddonQuantities = Map<int, int>.from(selectedAddonQuantities);
+      }
     } else {
       _items.add(CartItem(
         product: product,
         quantity: quantity,
         variantPrice: variantPrice,
         variantName: variantName,
+        selectedAddonQuantities: selectedAddonQuantities,
       ));
     }
     notifyListeners();

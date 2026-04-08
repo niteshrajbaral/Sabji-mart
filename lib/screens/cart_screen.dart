@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
+import '../../models/cart_item.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/address_provider.dart';
 import '../../components/address_selector.dart';
@@ -88,8 +89,8 @@ class CartScreen extends StatelessWidget {
                             ...cart.items.map((item) {
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 14),
-                                child: ProductCard(
-                                  product: item.product,
+                                child: _CartItemCard(
+                                  item: item,
                                   onTap: () => context.push('/home/product',
                                       extra: item.product),
                                   onQuickAdd: () =>
@@ -246,6 +247,150 @@ class _PriceSummaryRow extends StatelessWidget {
             style: AppTextStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.w600, color: AppColors.darkBrown)),
       ],
+    );
+  }
+}
+
+// ── Cart Item Card with Addon Details ────────────────────────────────────────
+class _CartItemCard extends StatelessWidget {
+  final CartItem item;
+  final VoidCallback onTap;
+  final VoidCallback onQuickAdd;
+  final bool isFavourite;
+  final VoidCallback onToggleFavourite;
+
+  const _CartItemCard({
+    required this.item,
+    required this.onTap,
+    required this.onQuickAdd,
+    required this.isFavourite,
+    required this.onToggleFavourite,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final qty = item.quantity;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        clipBehavior: Clip.hardEdge,
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  // Emoji image
+                  Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppDecorations.radiusM),
+                    ),
+                    clipBehavior: Clip.hardEdge,
+                    alignment: Alignment.center,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppDecorations.radiusM),
+                      child: Image.network(item.product.image, fit: BoxFit.fill, height: 90),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Text column
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Name + favourite
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.product.name,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.darkBrown,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: onToggleFavourite,
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: Icon(
+                                  isFavourite
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  color: isFavourite
+                                      ? AppColors.terracotta
+                                      : AppColors.softBrown,
+                                  size: 16,
+                                  key: ValueKey(isFavourite),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Variant name if selected
+                        if (item.variantName != null && item.variantName!.isNotEmpty)
+                          Text(
+                            item.variantName!,
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: AppColors.textLight,
+                              fontSize: 12,
+                            ),
+                          ),
+                        // Addon details
+                        if (item.selectedAddonQuantities.isNotEmpty &&
+                            item.selectedAddonQuantities.values.any((q) => q > 0))
+                          ...item.selectedAddonQuantities.entries.where((e) => e.value > 0).map((entry) {
+                            final addonIndex = entry.key;
+                            final addonQty = entry.value;
+                            if (addonIndex < item.product.addons.length) {
+                              final addon = item.product.addons[addonIndex];
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  '• ${addon.name} x$addonQty (+Rs ${(addon.price * addonQty).toStringAsFixed(0)})',
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: AppColors.darkBrown,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          }),
+                        // Price
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Rs ${item.effectivePrice.toStringAsFixed(0)}',
+                            style: AppTextStyles.price,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // AddCounter pinned to the bottom-right corner
+            Positioned(
+              right: 14,
+              bottom: 14,
+              child: AddCounter(
+                qty: qty,
+                productId: item.product.id,
+                onAdd: onQuickAdd,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

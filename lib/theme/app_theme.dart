@@ -25,6 +25,7 @@ final class AppTheme {
           secondaryContainer: AppColors.softBrown,
           onSecondaryContainer: AppColors.white,
         ),
+        // scaffoldBackgroundColor: const Color.fromARGB(255, 206, 223, 215),
         scaffoldBackgroundColor: AppColors.cream,
         textTheme: GoogleFonts.dmSansTextTheme().copyWith(
           displayLarge: AppTextStyles.displayLarge,

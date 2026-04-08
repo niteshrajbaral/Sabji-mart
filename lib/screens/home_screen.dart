@@ -175,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen>
 
           // ── Category Pills ───────────────────────────────────────
           SizedBox(
-            height: 60,
+            height: 50,
             child: Consumer<CategoryProvider>(
               builder: (context, categoryProv, _) {
                 final categories = categoryProv.categories;

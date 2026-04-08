@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../components/app_back_button.dart';
 import 'package:provider/provider.dart';
 import '../providers/address_provider.dart';
+import '../providers/auth_provider.dart';
 import '../models/address.dart';
 
 // ── Edit Profile ──────────────────────────────────────────────────────────────
@@ -19,9 +20,125 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   String _selectedDiet = 'None';
+  late TextEditingController _emailController;
+  late TextEditingController _phoneController;
+  late TextEditingController _birthdayController;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = context.read<AuthProvider>().user;
+    _emailController = TextEditingController(text: user?.email ?? '');
+    _phoneController = TextEditingController(text: user?.phone ?? '');
+    _birthdayController = TextEditingController(text: user?.birthday ?? '');
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _phoneController.dispose();
+    _birthdayController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _birthdayController.text.isNotEmpty
+          ? DateTime.parse(_birthdayController.text)
+          : DateTime(1990),
+      firstDate: DateTime(1920),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _birthdayController.text = picked.toString().split(' ')[0];
+      });
+    }
+  }
+
+  Future<void> _showEditDialog(
+    BuildContext context,
+    String label,
+    TextEditingController controller,
+    TextInputType keyboardType,
+  ) async {
+    final tempController = TextEditingController(text: controller.text);
+    
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Edit $label'),
+        content: TextField(
+          controller: tempController,
+          keyboardType: keyboardType,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Enter $label',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                controller.text = tempController.text.trim();
+              });
+              Navigator.pop(ctx);
+            },
+            child: Text('Save',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+    
+    tempController.dispose();
+  }
+
+  Future<void> _saveProfile() async {
+    final authProvider = context.read<AuthProvider>();
+    
+    setState(() => _isSaving = true);
+
+    final success = await authProvider.updateProfile(
+      email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+      phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+      birthday: _birthdayController.text.isEmpty ? null : _birthdayController.text,
+    );
+
+    setState(() => _isSaving = false);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success ? 'Profile updated successfully!' : 'Failed to update profile'),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+      if (success) {
+        context.pop();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
+    
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -59,7 +176,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               borderRadius: BorderRadius.circular(28),
                             ),
                             alignment: Alignment.center,
-                            child: Text('S',
+                            child: Text(
+                                user?.initials ?? 'U',
                                 style: Theme.of(context)
                                     .textTheme
                                     .displayLarge
@@ -81,18 +199,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                     const SizedBox(height: 24),
                     _FieldLabel('FULL NAME'),
-                    _FieldInput(hint: 'Sophie Martin'),
+                    _FieldInput(hint: user?.customerName ?? '', enabled: false),
                     const SizedBox(height: 14),
                     _FieldLabel('EMAIL'),
-                    _FieldInput(hint: 'sophie.martin@email.com'),
+                    GestureDetector(
+                      onTap: () => _showEditDialog(context, 'Email', _emailController, TextInputType.emailAddress),
+                      child: _FieldInput(hint: _emailController.text.isEmpty ? 'Enter email' : _emailController.text, suffixIcon: Icons.edit_outlined),
+                    ),
                     const SizedBox(height: 14),
                     _FieldLabel('PHONE'),
-                    _FieldInput(hint: '+44 7700 900 123'),
+                    GestureDetector(
+                      onTap: () => _showEditDialog(context, 'Phone', _phoneController, TextInputType.phone),
+                      child: _FieldInput(hint: _phoneController.text.isEmpty ? 'Enter phone number' : _phoneController.text, suffixIcon: Icons.edit_outlined),
+                    ),
                     const SizedBox(height: 14),
                     _FieldLabel('BIRTHDAY'),
-                    _FieldInput(
-                        hint: 'March 14, 1990',
-                        suffixIcon: Icons.calendar_today_outlined),
+                    GestureDetector(
+                      onTap: () => _selectDate(context),
+                      child: _FieldInput(hint: _birthdayController.text.isEmpty ? 'Select birthday' : _birthdayController.text, suffixIcon: Icons.calendar_today_outlined),
+                    ),
                     const SizedBox(height: 14),
                     _FieldLabel('BIO'),
                     Container(
@@ -161,7 +286,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: PrimaryButton(
-                  label: 'Save Changes', onTap: () => context.pop()),
+                  label: _isSaving ? 'Saving...' : 'Save Changes', 
+                  onTap: _isSaving ? null : _saveProfile,
+                  isLoading: _isSaving),
             ),
           ],
         ),
@@ -191,8 +318,61 @@ class _FieldLabel extends StatelessWidget {
 class _FieldInput extends StatelessWidget {
   final String hint;
   final IconData? suffixIcon;
+  final bool isHint;
+  final bool enabled;
 
-  const _FieldInput({required this.hint, this.suffixIcon});
+  const _FieldInput({
+    required this.hint,
+    this.suffixIcon,
+    this.isHint = false,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: enabled ? Theme.of(context).cardColor : Theme.of(context).dividerColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Theme.of(context).dividerColor, width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(hint,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(
+                      color: isHint 
+                          ? Theme.of(context).colorScheme.outline 
+                          : Theme.of(context).colorScheme.onSurface,
+                    )),
+          ),
+          if (suffixIcon != null)
+            Icon(suffixIcon,
+                color: Theme.of(context).colorScheme.outline, size: 18),
+        ],
+      ),
+    );
+  }
+}
+
+class _EditableField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final IconData? suffixIcon;
+  final TextInputType? keyboardType;
+  final bool readOnly;
+
+  const _EditableField({
+    required this.controller,
+    required this.hint,
+    this.suffixIcon,
+    this.keyboardType,
+    this.readOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -206,11 +386,24 @@ class _FieldInput extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(hint,
-                style: Theme.of(context)
+            child: TextField(
+              controller: controller,
+              keyboardType: keyboardType,
+              readOnly: readOnly,
+              minLines: 1,
+              maxLines: 1,
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: Theme.of(context)
                     .textTheme
                     .bodyMedium
-                    ?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
+                    ?.copyWith(color: Theme.of(context).colorScheme.outline),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
           if (suffixIcon != null)
             Icon(suffixIcon,

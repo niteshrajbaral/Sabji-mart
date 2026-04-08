@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 import '../models/product.dart';
 import 'app_shell.dart';
 import '../screens/home_screen.dart';
@@ -8,11 +9,13 @@ import '../screens/product_detail_screen.dart';
 import '../screens/composite_product_detail_screen.dart';
 import '../screens/cart_screen.dart';
 import '../screens/checkout_screen.dart';
+import '../screens/login_screen.dart';
 import '../screens/order_success_screen.dart';
 import '../screens/recent_orders_screen.dart';
 import '../screens/favourites_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/profile_sub_screens.dart';
+import '../providers/auth_provider.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -28,6 +31,21 @@ final GlobalKey<NavigatorState> _profileNavigatorKey =
 final router = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/home',
+  redirect: (context, state) {
+    // Check if user is trying to access login page
+    final isLoggingIn = state.matchedLocation == '/cart/checkout/login';
+    
+    // Get auth provider to check authentication status
+    final authProvider = context.read<AuthProvider>();
+    final isAuthenticated = authProvider.isAuthenticated;
+    
+    // If user is already logged in and tries to access login page, redirect to order success
+    if (isAuthenticated && isLoggingIn) {
+      return '/cart/checkout/success';
+    }
+    
+    return null;
+  },
   errorBuilder: (context, state) => Scaffold(
     appBar: AppBar(title: const Text('Page Not Found')),
     body: Center(
@@ -127,6 +145,10 @@ final router = GoRouter(
                   path: 'checkout',
                   builder: (context, state) => const CheckoutScreen(),
                   routes: [
+                    GoRoute(
+                      path: 'login',
+                      builder: (context, state) => const LoginScreen(),
+                    ),
                     GoRoute(
                       path: 'success',
                       builder: (context, state) => const OrderSuccessScreen(),

@@ -71,13 +71,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (cartItem != null && mounted) {
         setState(() {
           _quantity = cartItem.quantity;
+          // Restore addon selections from cart item
+          _selectedAddonQuantities.addAll(cartItem.selectedAddonQuantities);
+          // Restore variant selection if exists
+          if (cartItem.variantPrice != null && widget.product.variants.isNotEmpty) {
+            // Find the variant index that matches the stored variant price
+            final variantItems = widget.product.variants.first.variantItems;
+            final variantIndex = variantItems.indexWhere((v) => v.price == cartItem.variantPrice);
+            if (variantIndex >= 0) {
+              _selectedVariantIndex = variantIndex;
+            }
+          }
         });
       } else if (mounted) {
         // Auto-add product to cart with quantity 1 on opening
         setState(() {
           _quantity = 1;
         });
-        // Pass variant price and name if a variant is selected
+        // Pass variant price, name, and addon selections if available
         final variantItem = _selectedVariantItem;
         cartProvider.addProduct(
           widget.product,
@@ -356,6 +367,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 setState(() {
                                   _selectedAddonQuantities[addonIndex] = selectedQty + 1;
                                 });
+                                // Sync addon changes to cart if product exists
+                                final cart = context.read<CartProvider>();
+                                if (cart.contains(widget.product)) {
+                                  final cartItem = cart.items.firstWhere((i) => i.product.id == widget.product.id);
+                                  cartItem.selectedAddonQuantities = Map<int, int>.from(_selectedAddonQuantities);
+                                  cartItem.variantPrice = _selectedVariantItem?.price;
+                                  cartItem.variantName = _selectedVariantItem != null ? _getVariantDisplayName(_selectedVariantItem!) : null;
+                                }
                               }
                             },
                             onDecrement: () {
@@ -363,6 +382,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 setState(() {
                                   _selectedAddonQuantities[addonIndex] = selectedQty - 1;
                                 });
+                                // Sync addon changes to cart if product exists
+                                final cart = context.read<CartProvider>();
+                                if (cart.contains(widget.product)) {
+                                  final cartItem = cart.items.firstWhere((i) => i.product.id == widget.product.id);
+                                  cartItem.selectedAddonQuantities = Map<int, int>.from(_selectedAddonQuantities);
+                                  cartItem.variantPrice = _selectedVariantItem?.price;
+                                  cartItem.variantName = _selectedVariantItem != null ? _getVariantDisplayName(_selectedVariantItem!) : null;
+                                }
                               }
                             },
                           );
@@ -448,13 +475,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               if (cart.contains(widget.product)) {
                 cart.updateById(widget.product.id, _quantity);
               } else {
-                // Pass variant price and name if a variant is selected
+                // Pass variant price, name, and addon selections if available
                 final variantItem = _selectedVariantItem;
                 cart.addProduct(
                   widget.product,
                   quantity: _quantity,
                   variantPrice: variantItem?.price,
                   variantName: variantItem != null ? _getVariantDisplayName(variantItem) : null,
+                  selectedAddonQuantities: Map<int, int>.from(_selectedAddonQuantities),
                 );
               }
             },
@@ -462,13 +490,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               if (_quantity > 0) {
                 final cart = context.read<CartProvider>();
                 if (!cart.contains(widget.product)) {
-                  // Pass variant price and name if a variant is selected
+                  // Pass variant price, name, and addon selections if available
                   final variantItem = _selectedVariantItem;
                   cart.addProduct(
                     widget.product,
                     quantity: _quantity,
                     variantPrice: variantItem?.price,
                     variantName: variantItem != null ? _getVariantDisplayName(variantItem) : null,
+                    selectedAddonQuantities: Map<int, int>.from(_selectedAddonQuantities),
                   );
                 }
                 context.push('/cart');
@@ -476,6 +505,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                       content: Text(l10n.selectQuantityError)),
+                );
+              }
+            },
+            onQuantityChanged: (newQty) {
+              setState(() => _quantity = newQty);
+              final cart = context.read<CartProvider>();
+              if (cart.contains(widget.product)) {
+                cart.updateById(widget.product.id, newQty);
+              } else {
+                // Pass variant price, name, and addon selections if available
+                final variantItem = _selectedVariantItem;
+                cart.addProduct(
+                  widget.product,
+                  quantity: newQty,
+                  variantPrice: variantItem?.price,
+                  variantName: variantItem != null ? _getVariantDisplayName(variantItem) : null,
+                  selectedAddonQuantities: Map<int, int>.from(_selectedAddonQuantities),
                 );
               }
             },

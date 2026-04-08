@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 /// Brand colour palette for Sabji mart — Fruit & Vegetable Wholesaler.
 /// Single source of truth — never hard-code colours elsewhere.
 abstract final class AppColors {
-  static const Color cream = Color(0xFFF4FAF6);         // scaffold background
-  static const Color beige = Color(0xFFE0F2E7);         // light surface / borders
-  static const Color warmWhite = Color(0xFFF8FCF9);     // card backgrounds
+  static const Color cream = Color(0xFFE8F5E9);         // scaffold background (darker)
+  static const Color beige = Color(0xFFC8E6C9);         // light surface / borders (darker)
+  static const Color warmWhite = Color(0xFFF1F8E9);     // card backgrounds (darker)
   static const Color softBrown = Color(0xFF2D7A55);     // medium green
   static const Color darkBrown = Color(0xFF1A4731);     // deep forest green (primary)
   static const Color caramel = Color(0xFF52B788);       // fresh leaf green (secondary)
