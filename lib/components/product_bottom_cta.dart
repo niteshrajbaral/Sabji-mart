@@ -11,6 +11,7 @@ class ProductBottomCta extends StatefulWidget {
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
   final VoidCallback onCheckout;
+  final ValueChanged<int>? onQuantityChanged;
 
   const ProductBottomCta({
     super.key,
@@ -19,6 +20,7 @@ class ProductBottomCta extends StatefulWidget {
     required this.onDecrement,
     required this.onIncrement,
     required this.onCheckout,
+    this.onQuantityChanged,
   });
 
   @override
@@ -139,23 +141,28 @@ class _ProductBottomCtaState extends State<ProductBottomCta>
                           ),
                           SizedBox(
                             width: 32,
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              transitionBuilder: (child, anim) =>
-                                  ScaleTransition(scale: anim, child: child),
-                              child: Text(
-                                '${widget.quantity}',
-                                key: ValueKey(widget.quantity),
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: cs.onSurface,
+                            child: widget.onQuantityChanged != null
+                                ? EditableQuantity(
+                                    quantity: widget.quantity,
+                                    onQuantityChanged: widget.onQuantityChanged!,
+                                  )
+                                : AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    transitionBuilder: (child, anim) =>
+                                        ScaleTransition(scale: anim, child: child),
+                                    child: Text(
+                                      '${widget.quantity}',
+                                      key: ValueKey(widget.quantity),
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            color: cs.onSurface,
+                                          ),
                                     ),
-                              ),
-                            ),
+                                  ),
                           ),
                           _StepperButton(
                             icon: Icons.add_rounded,
@@ -251,6 +258,118 @@ class _StepperButton extends StatelessWidget {
           color: filled ? cs.onPrimary : cs.primary,
         ),
       ),
+    );
+  }
+}
+
+// ── Editable quantity display ─────────────────────────────────────────────────
+
+class EditableQuantity extends StatefulWidget {
+  final int quantity;
+  final ValueChanged<int> onQuantityChanged;
+
+  const EditableQuantity({
+    super.key,
+    required this.quantity,
+    required this.onQuantityChanged,
+  });
+
+  @override
+  State<EditableQuantity> createState() => _EditableQuantityState();
+}
+
+class _EditableQuantityState extends State<EditableQuantity> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus && _isEditing) {
+        _submitQuantity();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _startEditing() {
+    setState(() {
+      _isEditing = true;
+    });
+    _controller.text = widget.quantity.toString();
+    _focusNode.requestFocus();
+  }
+
+  void _submitQuantity() {
+    final text = _controller.text.trim();
+    int? newQty = int.tryParse(text);
+    
+    // Validate: must be a number between 1 and 99
+    if (newQty == null || newQty < 1) {
+      newQty = widget.quantity; // Revert to current quantity
+    } else if (newQty > 99) {
+      newQty = 99; // Cap at 99
+    }
+
+    if (newQty != widget.quantity) {
+      widget.onQuantityChanged(newQty);
+    }
+
+    setState(() {
+      _isEditing = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    
+    return GestureDetector(
+      onTap: _startEditing,
+      child: _isEditing
+          ? SizedBox(
+              width: 32,
+              height: 28,
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.darkBrown,
+                ),
+                decoration: const InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                  border: InputBorder.none,
+                ),
+                onSubmitted: (_) => _submitQuantity(),
+                autofocus: true,
+              ),
+            )
+          : AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, anim) =>
+                  ScaleTransition(scale: anim, child: child),
+              child: Text(
+                '${widget.quantity}',
+                key: ValueKey(widget.quantity),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface,
+                ),
+              ),
+            ),
     );
   }
 }

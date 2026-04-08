@@ -319,6 +319,15 @@ class _CompositeProductDetailScreenState
                 );
               }
             },
+            onQuantityChanged: (newQty) {
+              setState(() => _quantity = newQty);
+              final cart = context.read<CartProvider>();
+              if (cart.contains(widget.product)) {
+                cart.updateById(widget.product.id, newQty);
+              } else {
+                cart.addProduct(widget.product, quantity: newQty);
+              }
+            },
           ),
         ],
       ),

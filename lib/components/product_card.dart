@@ -135,7 +135,8 @@ class ProductCard extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 /// Compact "+" that expands to "−  N  +" once qty > 0.
-class AddCounter extends StatelessWidget {
+/// The quantity can be edited by tapping on the number.
+class AddCounter extends StatefulWidget {
   final int qty;
   final String productId;
   final VoidCallback onAdd;
@@ -148,8 +149,62 @@ class AddCounter extends StatelessWidget {
   });
 
   @override
+  State<AddCounter> createState() => _AddCounterState();
+}
+
+class _AddCounterState extends State<AddCounter> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus && _isEditing) {
+        _submitQuantity();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _startEditing() {
+    setState(() {
+      _isEditing = true;
+    });
+    _controller.text = widget.qty.toString();
+    _focusNode.requestFocus();
+  }
+
+  void _submitQuantity() {
+    final text = _controller.text.trim();
+    int? newQty = int.tryParse(text);
+    
+    // Validate: must be a number between 1 and 99
+    if (newQty == null || newQty < 1) {
+      newQty = widget.qty; // Revert to current quantity
+    } else if (newQty > 99) {
+      newQty = 99; // Cap at 99
+    }
+
+    if (newQty != widget.qty) {
+      context.read<CartProvider>().updateById(widget.productId, newQty);
+    }
+
+    setState(() {
+      _isEditing = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final hasItems = qty > 0;
+    final hasItems = widget.qty > 0;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
@@ -176,30 +231,64 @@ class AddCounter extends StatelessWidget {
                   child: GestureDetector(
                     onTap: () => context
                         .read<CartProvider>()
-                        .updateById(productId, qty - 1),
+                        .updateById(widget.productId, widget.qty - 1),
                     child: Icon(Icons.remove_rounded,
                         color: AppColors.cream, size: 14),
                   ),
                 ),
-                // Animated count
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  transitionBuilder: (child, anim) =>
-                      ScaleTransition(scale: anim, child: child),
-                  child: Text(
-                    '$qty',
-                    key: ValueKey(qty),
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.cream,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
+                // Animated count or TextField
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _startEditing,
+                    child: _isEditing
+                        ? Align(
+                            alignment: Alignment.center,
+                            child: SizedBox(
+                              height: 32,
+                              child: Align(
+                                alignment: Alignment.center,
+                                child: TextField(
+                                  controller: _controller,
+                                  focusNode: _focusNode,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: AppColors.darkBrown,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    height: 1.5,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    border: InputBorder.none,
+                                  ),
+                                  onSubmitted: (_) => _submitQuantity(),
+                                  autofocus: true,
+                                ),
+                              ),
+                            ),
+                          )
+                        : AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 180),
+                            transitionBuilder: (child, anim) =>
+                                ScaleTransition(scale: anim, child: child),
+                            child: Text(
+                              '${widget.qty}',
+                              key: ValueKey(widget.qty),
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.cream,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
                 // + increment
                 Expanded(
                   child: GestureDetector(
-                    onTap: onAdd,
+                    onTap: widget.onAdd,
                     child: Icon(Icons.add_rounded,
                         color: AppColors.cream, size: 14),
                   ),
@@ -207,7 +296,7 @@ class AddCounter extends StatelessWidget {
               ],
             )
           : GestureDetector(
-              onTap: onAdd,
+              onTap: widget.onAdd,
               child: const Icon(Icons.add_rounded,
                   color: AppColors.cream, size: 18),
             ),
