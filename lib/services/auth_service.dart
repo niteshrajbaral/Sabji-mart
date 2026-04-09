@@ -75,42 +75,68 @@ class AuthService {
   }
 
   /// Registers a new user.
-  /// Note: This is a placeholder - adjust based on actual registration API
   Future<UserModel> register({
     required String name,
-    required String emailOrPhone,
+    required String email,
+    required String phone,
     required String password,
+    required String confirmPassword,
   }) async {
     try {
-      final url = Uri.parse('${ApiConfig.authUrl}/auth/register');
+      // Use the exact registration API endpoint provided
+      final url = Uri.parse('https://api.beta.order.rebuzzpos.com/api/auth/register');
       
-      debugPrint('[AuthService] Registering from: $url');
+      debugPrint('[AuthService] Registering user to: $url');
+      debugPrint('[AuthService] Request body: name=$name, email=$email, phone=$phone, password=${'*' * password.length}');
       
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'app': 'customer', // Required header for this API
+        },
         body: jsonEncode({
           'name': name,
-          'emailOrPhone': emailOrPhone,
+          'email': email,
+          'phone': phone,
           'password': password,
+          'confirmPassword': confirmPassword,
         }),
       );
 
       debugPrint('[AuthService] Register response status: ${response.statusCode}');
+      debugPrint('[AuthService] Response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         
         if (data['status'] == 'success') {
           final user = UserModel.fromJson(data);
+          
+          // Store user data in shared preferences
           await _saveUser(user);
+          
+          debugPrint('[AuthService] Registration successful for user: ${user.userId}');
           return user;
         } else {
           throw Exception(data['message'] ?? 'Registration failed');
         }
       } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Registration failed: ${response.statusCode}');
+        // Try to parse error message from response
+        String errorMessage = 'Registration failed: ${response.statusCode}';
+        try {
+          final errorData = jsonDecode(response.body);
+          if (errorData is Map) {
+            errorMessage = errorData['message'] ?? errorData['error'] ?? errorMessage;
+          }
+        } catch (_) {
+          // If we can't parse the error, use the raw body
+          if (response.body.isNotEmpty) {
+            errorMessage = response.body;
+          }
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
       debugPrint('[AuthService] Register error: $e');
@@ -168,6 +194,51 @@ class AuthService {
   /// Updates the stored user data.
   Future<void> updateUser(UserModel user) async {
     await _saveUser(user);
+  }
+
+  /// Verifies email address with OTP token code.
+  Future<bool> verifyEmail({
+    required String email,
+    required String token,
+  }) async {
+    try {
+      final url = Uri.parse('https://api.beta.order.rebuzzpos.com/api/auth/verify-email');
+      
+      debugPrint('[AuthService] Verifying email for: $email with token: ${'*' * token.length}');
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'app': 'customer',
+        },
+        body: jsonEncode({
+          'email': email,
+          'token': token,
+        }),
+      );
+
+      debugPrint('[AuthService] Verify email response status: ${response.statusCode}');
+      debugPrint('[AuthService] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['status'] == 'success';
+      } else {
+        String errorMessage = 'Verification failed: ${response.statusCode}';
+        try {
+          final errorData = jsonDecode(response.body);
+          if (errorData is Map) {
+            errorMessage = errorData['data']?['message'] ?? errorData['message'] ?? errorData['error'] ?? errorMessage;
+          }
+        } catch (_) {}
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      debugPrint('[AuthService] Verify email error: $e');
+      rethrow;
+    }
   }
 
   /// Gets the current session token if user is logged in.

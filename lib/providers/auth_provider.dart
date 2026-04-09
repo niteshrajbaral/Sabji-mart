@@ -65,8 +65,10 @@ class AuthProvider extends ChangeNotifier {
   /// Registers a new user.
   Future<bool> register({
     required String name,
-    required String emailOrPhone,
+    required String email,
+    required String phone,
     required String password,
+    required String confirmPassword,
   }) async {
     _isLoading = true;
     _error = null;
@@ -75,8 +77,10 @@ class AuthProvider extends ChangeNotifier {
     try {
       _user = await _authService.register(
         name: name,
-        emailOrPhone: emailOrPhone,
+        email: email,
+        phone: phone,
         password: password,
+        confirmPassword: confirmPassword,
       );
       _isAuthenticated = true;
       return true;
@@ -156,6 +160,30 @@ class AuthProvider extends ChangeNotifier {
 
   /// Gets the user's display name.
   String get displayName => _user?.displayName ?? 'User';
+
+  /// Verifies email address with OTP token code.
+  Future<bool> verifyEmail({
+    required String email,
+    required String token,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final success = await _authService.verifyEmail(
+        email: email,
+        token: token,
+      );
+      return success;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   /// Gets the user's initials for avatar.
   String get userInitials => _user?.initials ?? 'U';
