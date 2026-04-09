@@ -10,6 +10,7 @@ import '../screens/composite_product_detail_screen.dart';
 import '../screens/cart_screen.dart';
 import '../screens/checkout_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/otp_verification_screen.dart';
 import '../screens/order_success_screen.dart';
 import '../screens/recent_orders_screen.dart';
 import '../screens/favourites_screen.dart';
@@ -39,9 +40,18 @@ final router = GoRouter(
     final authProvider = context.read<AuthProvider>();
     final isAuthenticated = authProvider.isAuthenticated;
     
-    // If user is already logged in and tries to access login page, redirect to order success
+    // Only redirect authenticated users to order success if they came from checkout flow
+    // For users coming from profile or other screens, don't redirect
     if (isAuthenticated && isLoggingIn) {
-      return '/cart/checkout/success';
+      // Check if we came from checkout flow
+      final isFromCheckout = state.uri.queryParameters['from'] == 'checkout';
+      
+      if (isFromCheckout) {
+        return '/cart/checkout/success';
+      } else {
+        // For other sources (like profile), just go back to previous screen
+        return '/profile';
+      }
     }
     
     return null;
@@ -148,6 +158,13 @@ final router = GoRouter(
                     GoRoute(
                       path: 'login',
                       builder: (context, state) => const LoginScreen(),
+                    ),
+                    GoRoute(
+                      path: 'verify-email',
+                      builder: (context, state) {
+                        final email = state.extra as String;
+                        return OtpVerificationScreen(email: email);
+                      },
                     ),
                     GoRoute(
                       path: 'success',

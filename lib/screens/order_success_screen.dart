@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../components/primary_button.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/cart_provider.dart';
 
 class OrderSuccessScreen extends StatefulWidget {
   const OrderSuccessScreen({super.key});
@@ -22,6 +24,14 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
   @override
   void initState() {
     super.initState();
+    
+    // Clear cart when order is successfully confirmed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<CartProvider>(context, listen: false).clear();
+      }
+    });
+
     _confettiCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1800))
       ..forward();

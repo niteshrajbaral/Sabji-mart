@@ -103,7 +103,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               setState(() => _step++);
                             } else {
                               // Navigate to login screen before order success
-                              context.go('/cart/checkout/login');
+                              context.go('/cart/checkout/login?from=checkout');
                             }
                           },
                         ),
@@ -616,7 +616,10 @@ class _Step2 extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Suraj Giri', style: TextStyle(fontSize: 14)), // Not localizing names
-            Text('${l10n.paymentModeLabel}: cash', style: textTheme.bodyMedium),
+            Text(
+              '${l10n.paymentModeLabel}: ${selected == 0 ? "QR Payment" : "Cash"}',
+              style: textTheme.bodyMedium,
+            ),
           ],
         ),
         const SizedBox(height: 4),
