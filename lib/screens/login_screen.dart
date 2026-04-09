@@ -24,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   @override
@@ -31,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _phoneController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
@@ -52,8 +54,10 @@ class _LoginScreenState extends State<LoginScreen> {
         // Register
         success = await authProvider.register(
           name: _nameController.text.trim(),
-          emailOrPhone: _emailController.text.trim(),
+          email: _emailController.text.trim(),
+          phone: _phoneController.text.trim(),
           password: _passwordController.text,
+          confirmPassword: _confirmPasswordController.text,
         );
       }
 
@@ -61,19 +65,42 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = false);
 
       if (success) {
-        // Clear the cart before navigating
-        context.read<CartProvider>().clear();
-        
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isLogin ? 'Login successful!' : 'Registration successful!'),
-            backgroundColor: AppColors.darkBrown,
-          ),
-        );
-        
-        // Navigate to order success screen
-        context.go('/cart/checkout/success');
+        if (_isLogin) {
+          // Login success
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login successful!'),
+              backgroundColor: AppColors.darkBrown,
+            ),
+          );
+
+          // Check if we came from checkout flow
+          final isFromCheckout = GoRouterState.of(context).uri.queryParameters['from'] == 'checkout';
+          
+          if (isFromCheckout) {
+            // Clear cart only for checkout flow
+            context.read<CartProvider>().clear();
+            // Navigate to order success screen
+            context.go('/cart/checkout/success');
+          } else {
+            // For profile or other origins, just go back to profile screen
+            context.go('/profile');
+          }
+        } else {
+          // Registration success - redirect to OTP verification
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Verification code sent to your email!'),
+              backgroundColor: AppColors.darkBrown,
+            ),
+          );
+          
+          // Navigate to OTP verification screen with email
+          context.push(
+            '/cart/checkout/verify-email',
+            extra: _emailController.text.trim(),
+          );
+        }
       } else {
         // Show error message
         final errorMessage = authProvider.error ?? 'An error occurred';
@@ -175,6 +202,26 @@ class _LoginScreenState extends State<LoginScreen> {
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return l10n.nameRequired;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Phone field (only for register)
+                  TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: 'Phone Number',
+                      prefixIcon: const Icon(Icons.phone_outlined),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Phone number is required';
+                      }
+                      if (value.length < 10) {
+                        return 'Enter valid phone number';
                       }
                       return null;
                     },
@@ -299,26 +346,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 24),
                 
-                // Social login buttons
-                _SocialButton(
-                  icon: Icons.g_mobiledata,
-                  label: l10n.continueWithGoogle,
-                  onTap: () {
-                    // TODO: Implement Google sign in
-                  },
-                ),
+                // // Social login buttons
+                // _SocialButton(
+                //   icon: Icons.g_mobiledata,
+                //   label: l10n.continueWithGoogle,
+                //   onTap: () {
+                //     // TODO: Implement Google sign in
+                //   },
+                // ),
                 
-                const SizedBox(height: 12),
-                
-                _SocialButton(
-                  icon: Icons.apple,
-                  label: l10n.continueWithApple,
-                  onTap: () {
-                    // TODO: Implement Apple sign in
-                  },
-                ),
-                
-                const SizedBox(height: 32),
+                // const SizedBox(height: 32),
                 
                 // Toggle login/register
                 Row(
