@@ -26,7 +26,8 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cartData = context.select<CartProvider, (int, double?)>((cart) {
-      final items = cart.items.where((i) => i.product.id == product.id).toList();
+      final items =
+          cart.items.where((i) => i.product.id == product.id).toList();
       final qty = items.fold(0, (sum, i) => sum + i.quantity);
       // Get the variant price from the first matching cart item (if any)
       final variantPrice = items.isNotEmpty ? items.first.variantPrice : null;
@@ -42,78 +43,64 @@ class ProductCard extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.fromLTRB(5, 5, 14, 5),
               child: Row(
                 children: [
-                  // Emoji image
+                  // product image
                   Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppDecorations.radiusM)),
-                    clipBehavior: Clip.hardEdge,
-                    alignment: Alignment.center,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppDecorations.radiusM),
-                      child: Image.network(product.image, fit: BoxFit.fill, height: 90,)
-                    )
-                  ),
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(AppDecorations.radiusM)),
+                      clipBehavior: Clip.hardEdge,
+                      alignment: Alignment.center,
+                      child: ClipRRect(
+                          borderRadius:
+                              BorderRadius.circular(AppDecorations.radiusM),
+                          child: Image.network(
+                            product.image,
+                            fit: BoxFit.fill,
+                            height: 90,
+                          ))),
                   const SizedBox(width: 16),
                   // Text column — no button here
                   Expanded(
                     child: SizedBox(
-                      height: 90,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Name + favourite
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  product.name,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.darkBrown,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                        height: 90,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              product.name,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.darkBrown,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
                               ),
-                              GestureDetector(
-                                onTap: onToggleFavourite,
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 200),
-                                  child: Icon(
-                                    isFavourite
-                                        ? Icons.favorite_rounded
-                                        : Icons.favorite_border_rounded,
-                                    color: isFavourite
-                                        ? AppColors.terracotta
-                                        : AppColors.softBrown,
-                                    size: 16,
-                                    key: ValueKey(isFavourite),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Price only — button is Positioned separately
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'Rs ${(variantPrice ?? product.price).toStringAsFixed(0)}',
-                                style: AppTextStyles.price,
-                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
+                            const SizedBox(
+                              height: 8,
+                            ),
+                            Text(
+                              'Rs ${(variantPrice ?? product.price).toStringAsFixed(0)}',
+                              style: AppTextStyles.price.copyWith(fontSize: 16),
+                            ),
+                          ],
+                        )),
+                    // Price only — button is Positioned separately
                   ),
                 ],
+              ),
+            ),
+            Positioned(
+              top: 14,
+              right: 16,
+              child: _FavouriteIcon(
+                isFavourite: isFavourite,
+                onToggle: onToggleFavourite,
               ),
             ),
             // ── AddCounter pinned to the bottom-right corner ──────────────
@@ -127,6 +114,52 @@ class ProductCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FavouriteIcon extends StatefulWidget {
+  final bool isFavourite;
+  final VoidCallback onToggle;
+
+  const _FavouriteIcon({
+    required this.isFavourite,
+    required this.onToggle,
+  });
+
+  @override
+  State<_FavouriteIcon> createState() => _FavouriteIconState();
+}
+
+class _FavouriteIconState extends State<_FavouriteIcon> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onToggle,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Icon(
+            widget.isFavourite
+                ? Icons.favorite_rounded
+                : Icons.favorite_border_rounded,
+            color: _isHovered
+                ? (widget.isFavourite
+                    ? AppColors.terracotta.withOpacity(0.8)
+                    : AppColors.terracotta)
+                : (widget.isFavourite
+                    ? AppColors.terracotta
+                    : AppColors.softBrown),
+            size: 24,
+            key: ValueKey(widget.isFavourite),
+          ),
         ),
       ),
     );
@@ -185,7 +218,7 @@ class _AddCounterState extends State<AddCounter> {
   void _submitQuantity() {
     final text = _controller.text.trim();
     int? newQty = int.tryParse(text);
-    
+
     // Validate: must be a number between 1 and 99
     if (newQty == null || newQty < 1) {
       newQty = widget.qty; // Revert to current quantity
@@ -205,22 +238,16 @@ class _AddCounterState extends State<AddCounter> {
   @override
   Widget build(BuildContext context) {
     final hasItems = widget.qty > 0;
-
+    final cs = Theme.of(context).colorScheme;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeInOut,
       height: 32,
+      // padding: const EdgeInsets.symmetric(horizontal: 2),
       width: hasItems ? 88 : 32,
       decoration: BoxDecoration(
-        color: AppColors.darkBrown,
-        borderRadius: BorderRadius.circular(AppDecorations.radiusSM),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x334A3728), // primary with 20% opacity
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        color: cs.onSurface.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppDecorations.radiusXS),
       ),
       clipBehavior: Clip.hardEdge,
       child: hasItems
@@ -229,12 +256,20 @@ class _AddCounterState extends State<AddCounter> {
                 // − decrement
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => context
-                        .read<CartProvider>()
-                        .updateById(widget.productId, widget.qty - 1),
-                    child: Icon(Icons.remove_rounded,
-                        color: AppColors.cream, size: 14),
-                  ),
+                      onTap: () => context
+                          .read<CartProvider>()
+                          .updateById(widget.productId, widget.qty - 1),
+                      child: AnimatedContainer(
+                        width: 32,
+                        height: 32,
+                        duration: const Duration(milliseconds: 150),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppDecorations.radiusXS),
+                          color: AppColors.cream,
+                        ),
+                        child: Icon(Icons.remove_rounded,
+                            color: AppColors.darkBrown, size: 22),
+                      )),
                 ),
                 // Animated count or TextField
                 Expanded(
@@ -252,16 +287,22 @@ class _AddCounterState extends State<AddCounter> {
                                   focusNode: _focusNode,
                                   keyboardType: TextInputType.number,
                                   textAlign: TextAlign.center,
+                                  cursorColor: AppColors.black,
                                   style: AppTextStyles.labelSmall.copyWith(
-                                    color: AppColors.darkBrown,
+                                    // color: AppColors.darkBrown,
+                                    color:AppColors.black,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 13,
-                                    height: 1.5,
+                                    height: 2.1,
+                                    
                                   ),
                                   decoration: const InputDecoration(
                                     isDense: true,
                                     contentPadding: EdgeInsets.zero,
                                     border: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    
+                                    
                                   ),
                                   onSubmitted: (_) => _submitQuantity(),
                                   autofocus: true,
@@ -277,7 +318,7 @@ class _AddCounterState extends State<AddCounter> {
                               '${widget.qty}',
                               key: ValueKey(widget.qty),
                               style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.cream,
+                                color: AppColors.black,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),
@@ -288,18 +329,36 @@ class _AddCounterState extends State<AddCounter> {
                 // + increment
                 Expanded(
                   child: GestureDetector(
-                    onTap: widget.onAdd,
-                    child: Icon(Icons.add_rounded,
-                        color: AppColors.cream, size: 14),
-                  ),
+                      onTap: widget.onAdd,
+                      child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(AppDecorations.radiusXS),
+                              color: AppColors.darkBrown),
+                          child: const Icon(
+                            Icons.add_rounded,
+                            color: AppColors.cream,
+                            size: 22,
+                          ))),
                 ),
               ],
             )
           : GestureDetector(
               onTap: widget.onAdd,
-              child: const Icon(Icons.add_rounded,
-                  color: AppColors.cream, size: 18),
-            ),
+              child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppDecorations.radiusXS),
+                      color: AppColors.darkBrown),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    color: AppColors.cream,
+                    size: 22,
+                  ))),
     );
   }
 }

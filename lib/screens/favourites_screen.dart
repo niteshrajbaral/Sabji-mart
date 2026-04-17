@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../theme/app_colors.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../providers/favourites_provider.dart';
@@ -26,11 +27,18 @@ class FavouritesScreen extends StatelessWidget {
         appBar: AppBar(
           leading: Padding(
             padding: const EdgeInsets.only(left: 8.0),
+            
             child: IconButton(
-              icon: const Icon(Icons.arrow_back),
+                    style: IconButton.styleFrom(
+                    backgroundColor: AppColors.transparent,
+                    shadowColor: AppColors.transparent,
+              ),
+              icon: const Icon(
+                Icons.arrow_back),
               onPressed: () => context.go('/home'),
             ),
           ),
+          title: Text('My Favourites'),
         ),
         body: SafeArea(
           child: Column(
@@ -41,12 +49,12 @@ class FavouritesScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('My Favourites',
-                        style: Theme.of(context).textTheme.displayMedium),
-                    const SizedBox(height: 4),
+                    
+                    const SizedBox(height: 6),
                     Text(
                         '${favs.length} saved item${favs.length != 1 ? 's' : ''}',
-                        style: Theme.of(context).textTheme.bodySmall),
+                        style: Theme.of(context).textTheme.bodySmall,
+                        textAlign: TextAlign.end),
                   ],
                 ),
               ),

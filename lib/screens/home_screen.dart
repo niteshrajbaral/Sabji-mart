@@ -45,6 +45,11 @@ class _HomeScreenState extends State<HomeScreen>
         vsync: this, duration: const Duration(milliseconds: 600));
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _animCtrl.forward();
+    
+    // Load products on screen initialization
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductProvider>().loadProducts();
+    });
   }
 
   @override
@@ -241,19 +246,8 @@ class _HomeScreenState extends State<HomeScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(l10n.recentOrders,
-                          style: Theme.of(context).textTheme.headlineSmall),
-                      GestureDetector(
-                        onTap: () => context.push('/home/recent_orders'),
-                        child: Text(l10n.viewAll,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.tertiary,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13)),
-                      ),
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 18)),
+                       _ViewAllButton(),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -264,23 +258,26 @@ class _HomeScreenState extends State<HomeScreen>
                       physics: const BouncingScrollPhysics(),
                       itemCount: AppData.recentOrders.length.clamp(0, 3),
                       separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (_, i) => GestureDetector(
-                        onTap: () => context.push('/home/recent_orders'),
-                        child: SizedBox(
-                          width: 200,
-                          child: OrderCard(
-                            order: AppData.recentOrders[i],
-                            featured: i == 0,
-                            onReorder: () {
-                              final products = context.read<ProductProvider>().products;
-                              context
-                                  .read<CartProvider>()
-                                  .reorder(AppData.recentOrders[i], products);
-                              context.push('/cart');
-                            },
-                          ),
-                        ),
-                      ),
+                       itemBuilder: (_, i) => MouseRegion(
+                         cursor: SystemMouseCursors.click,
+                         child: GestureDetector(
+                           onTap: () => context.push('/home/recent_orders'),
+                           child: SizedBox(
+                             width: 200,
+                             child: OrderCard(
+                               order: AppData.recentOrders[i],
+                               featured: i == 0,
+                               onReorder: () {
+                                 final products = context.read<ProductProvider>().products;
+                                 context
+                                     .read<CartProvider>()
+                                     .reorder(AppData.recentOrders[i], products);
+                                 context.push('/cart');
+                               },
+                             ),
+                           ),
+                         ),
+                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -330,10 +327,10 @@ class _HomeScreenState extends State<HomeScreen>
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: width > 800 ? 3 : 2,
+                      crossAxisCount: width > 800 ? 4 : 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: width>800? 1.6 : 0.8,
+                      childAspectRatio: width>800? 0.9 : 0.7,
                     ),
                     itemCount: filtered.length,
                     itemBuilder: (_, i) {
@@ -372,6 +369,44 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+}
+
+class _ViewAllButton extends StatefulWidget {
+  const _ViewAllButton();
+
+  @override
+  State<_ViewAllButton> createState() => _ViewAllButtonState();
+}
+
+class _ViewAllButtonState extends State<_ViewAllButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: () => context.push('/home/recent_orders'),
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall!
+              .copyWith(
+                  color: _isHovered
+                      ? Theme.of(context).colorScheme.tertiary.withOpacity(0.8)
+                      : Theme.of(context).colorScheme.tertiary,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13),
+          child: Text(l10n.viewAll),
+        ),
+      ),
+    );
+  }
 }
 
 // ── Private helper widgets ────────────────────────────────────────────────────
@@ -484,10 +519,12 @@ class _SortButton extends StatelessWidget {
       statesController:
           WidgetStatesController({if (isActive) WidgetState.selected}),
       style: TextButton.styleFrom(
-        minimumSize: const Size(0, 40),
+        minimumSize: const Size(30, 32),
         padding: const EdgeInsets.symmetric(horizontal: 16),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      
       ),
-      child: const Icon(Icons.sort_rounded, size: 20),
+      child: const Icon(Icons.sort_rounded, size:20 ),
     );
   }
 }
@@ -502,6 +539,12 @@ class _ViewToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return SegmentedButton<bool>(
       showSelectedIcon: false,
+      style: SegmentedButton.styleFrom(
+        minimumSize: const Size(30, 30),
+        padding: const EdgeInsets.symmetric(horizontal: 1),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+      ),
       segments: const [
         ButtonSegment(value: false, icon: Icon(Icons.view_list_rounded)),
         ButtonSegment(value: true, icon: Icon(Icons.grid_view_rounded)),

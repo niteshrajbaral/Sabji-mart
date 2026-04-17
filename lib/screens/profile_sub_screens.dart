@@ -324,8 +324,9 @@ class _FieldInput extends StatelessWidget {
   const _FieldInput({
     required this.hint,
     this.suffixIcon,
-    this.isHint = false,
     this.enabled = true,
+    this.isHint = true,
+
   });
 
   @override
@@ -369,9 +370,9 @@ class _EditableField extends StatelessWidget {
   const _EditableField({
     required this.controller,
     required this.hint,
-    this.suffixIcon,
-    this.keyboardType,
-    this.readOnly = false,
+    required this.suffixIcon,
+    required this.keyboardType,
+    required this.readOnly,
   });
 
   @override

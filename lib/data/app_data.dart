@@ -228,7 +228,7 @@ abstract final class AppData {
     ),
   ];
 
-  static List<Address> _savedAddresses = [
+  static final List<Address> _savedAddresses = [
     const Address(
       id: 1,
       label: 'Central Depot',
