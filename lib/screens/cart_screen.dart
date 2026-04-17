@@ -47,7 +47,8 @@ class CartScreen extends StatelessWidget {
     final cartIds = cart.items.map((i) => i.product.id).toSet();
     final suggestions = productProv.products
         .where((p) => !cartIds.contains(p.id))
-        .where((p) => !p.usesCompositeItems) // Filter out composite items (shown in offer slider)
+        .where((p) => !p
+            .usesCompositeItems) // Filter out composite items (shown in offer slider)
         .take(4)
         .toList();
 
@@ -57,6 +58,10 @@ class CartScreen extends StatelessWidget {
         leading: Padding(
           padding: const EdgeInsets.only(left: 8.0),
           child: IconButton(
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.transparent,
+              shadowColor: AppColors.transparent,
+            ),
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.go('/home'),
           ),
@@ -110,7 +115,7 @@ class CartScreen extends StatelessWidget {
                                   style: AppTextStyles.headlineSmall),
                               const SizedBox(height: 12),
                               SizedBox(
-                                height: width> 800 ? 250 : 230,
+                                // height: width > 800 ? 250 : 230,
                                 child: ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   physics: const BouncingScrollPhysics(),
@@ -140,7 +145,8 @@ class CartScreen extends StatelessWidget {
                             ],
 
                             // Address
-                            Text(l10n.deliverTo, style: AppTextStyles.labelSmall),
+                            Text(l10n.deliverTo,
+                                style: AppTextStyles.labelSmall),
                             const SizedBox(height: 8),
                             AddressSelector(
                               selectedId: addrProv.selectedId,
@@ -214,7 +220,8 @@ class CartScreen extends StatelessWidget {
                 left: 0,
                 right: 0,
                 child: PrimaryButton(
-                  label: '${l10n.checkout} — Rs ${cart.total.toStringAsFixed(0)}',
+                  label:
+                      '${l10n.checkout} — Rs ${cart.total.toStringAsFixed(0)}',
                   onTap: () {
                     if (cart.items.isNotEmpty) {
                       context.push('/cart/checkout');
@@ -278,7 +285,7 @@ class _CartItemCard extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.fromLTRB(5, 5, 14, 5),
               child: Row(
                 children: [
                   // Emoji image
@@ -286,13 +293,16 @@ class _CartItemCard extends StatelessWidget {
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppDecorations.radiusM),
+                      borderRadius:
+                          BorderRadius.circular(AppDecorations.radiusM),
                     ),
                     clipBehavior: Clip.hardEdge,
                     alignment: Alignment.center,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppDecorations.radiusM),
-                      child: Image.network(item.product.image, fit: BoxFit.fill, height: 90),
+                      borderRadius:
+                          BorderRadius.circular(AppDecorations.radiusM),
+                      child: Image.network(item.product.image,
+                          fit: BoxFit.fill, height: 90),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -327,7 +337,7 @@ class _CartItemCard extends StatelessWidget {
                                   color: isFavourite
                                       ? AppColors.terracotta
                                       : AppColors.softBrown,
-                                  size: 16,
+                                  size: 24,
                                   key: ValueKey(isFavourite),
                                 ),
                               ),
@@ -335,7 +345,8 @@ class _CartItemCard extends StatelessWidget {
                           ],
                         ),
                         // Variant name if selected
-                        if (item.variantName != null && item.variantName!.isNotEmpty)
+                        if (item.variantName != null &&
+                            item.variantName!.isNotEmpty)
                           Text(
                             item.variantName!,
                             style: AppTextStyles.labelSmall.copyWith(
@@ -345,8 +356,11 @@ class _CartItemCard extends StatelessWidget {
                           ),
                         // Addon details
                         if (item.selectedAddonQuantities.isNotEmpty &&
-                            item.selectedAddonQuantities.values.any((q) => q > 0))
-                          ...item.selectedAddonQuantities.entries.where((e) => e.value > 0).map((entry) {
+                            item.selectedAddonQuantities.values
+                                .any((q) => q > 0))
+                          ...item.selectedAddonQuantities.entries
+                              .where((e) => e.value > 0)
+                              .map((entry) {
                             final addonIndex = entry.key;
                             final addonQty = entry.value;
                             if (addonIndex < item.product.addons.length) {

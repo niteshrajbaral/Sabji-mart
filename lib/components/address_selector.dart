@@ -46,7 +46,7 @@ class AddressSelector extends StatelessWidget {
               )
             : null,
         child: Row(
-          mainAxisSize: isHeader ? MainAxisSize.min : MainAxisSize.max,
+          mainAxisSize: MainAxisSize.min,
           children: [
             if (!isHeader) ...[
               Container(
@@ -63,14 +63,22 @@ class AddressSelector extends StatelessWidget {
             ],
             Flexible(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  
                   if (isHeader)
+                  // Padding(padding: EdgeInsetsGeometry.only(left: 20),
+                    // alignment: FractionalOffset(0.2,1),
+                    // child: 
                     Text(
                       'Deliver to ✦',
-                      style: AppTextStyles.caption.copyWith(letterSpacing: 0.3),
+                      style: AppTextStyles.caption.copyWith(letterSpacing: 0.3,
+                    
+                      ),
                     ),
+                  
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

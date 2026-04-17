@@ -15,7 +15,7 @@ class SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: Theme.of(context).textTheme.headlineMedium),
+        Text(title, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18)),
         if (trailing != null) trailing!,
       ],
     );
