@@ -23,15 +23,46 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
   late TextEditingController _birthdayController;
+  late TextEditingController _bioController;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    final user = context.read<AuthProvider>().user;
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final authProvider = context.read<AuthProvider>();
+
+    // First load local stored data
+    final user = authProvider.user;
     _emailController = TextEditingController(text: user?.email ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
     _birthdayController = TextEditingController(text: user?.birthday ?? '');
+    _bioController = TextEditingController(text: user?.bio ?? '');
+    if (user?.dietaryPreference != null &&
+        user!.dietaryPreference!.isNotEmpty) {
+      _selectedDiet = user.dietaryPreference!;
+    }
+
+    // Then fetch latest data from API
+    await authProvider.fetchUserProfile();
+
+    // Update controllers with fresh API data
+    if (mounted) {
+      final updatedUser = authProvider.user;
+      setState(() {
+        _emailController.text = updatedUser?.email ?? '';
+        _phoneController.text = updatedUser?.phone ?? '';
+        _birthdayController.text = updatedUser?.birthday ?? '';
+        _bioController.text = updatedUser?.bio ?? '';
+        if (updatedUser?.dietaryPreference != null &&
+            updatedUser!.dietaryPreference!.isNotEmpty) {
+          _selectedDiet = updatedUser.dietaryPreference!;
+        }
+      });
+    }
   }
 
   @override
@@ -39,7 +70,115 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _birthdayController.dispose();
+    _bioController.dispose();
     super.dispose();
+  }
+
+  static const List<String> _avatarAssets = [
+    'assets/images/avatars/avatar1.png',
+    'assets/images/avatars/avatar2.png',
+    'assets/images/avatars/avatar3.png',
+    'assets/images/avatars/avatar4.png',
+    'assets/images/avatars/avatar5.png',
+    'assets/images/avatars/avatar6.png',
+    'assets/images/avatars/avatar7.png',
+    'assets/images/avatars/avatar8.png',
+    'assets/images/avatars/avatar9.png',
+    'assets/images/avatars/avatar10.png',
+    'assets/images/avatars/avatar11.png',
+    'assets/images/avatars/avatar12.png',
+    'assets/images/avatars/avatar13.png',
+    'assets/images/avatars/avatar14.png',
+    'assets/images/avatars/avatar15.png',
+  ];
+
+  // Back-compat: earlier code saved paths without the `assets/images/` prefix.
+  // Normalize both the old short form and the new full form so stored values
+  // keep working.
+  static String _resolveAvatarAsset(String stored) {
+    if (stored.startsWith('assets/')) return stored;
+    if (stored.startsWith('avatars/')) return 'assets/images/$stored';
+    return stored;
+  }
+
+  Future<void> _showAvatarPicker() async {
+    final authProvider = context.read<AuthProvider>();
+    final currentAvatar = authProvider.user?.avatar == null
+        ? null
+        : _resolveAvatarAsset(authProvider.user!.avatar!);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(ctx).dividerColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('Choose Avatar',
+                  style: Theme.of(ctx).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: _avatarAssets.length,
+                itemBuilder: (_, i) {
+                  final asset = _avatarAssets[i];
+                  final selected = asset == currentAvatar;
+                  return GestureDetector(
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await authProvider.updateProfile(avatar: asset);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected
+                              ? Theme.of(ctx).colorScheme.primary
+                              : Colors.transparent,
+                          width: 2.5,
+                        ),
+                      ),
+                      padding: const EdgeInsets.all(2),
+                      child: ClipOval(
+                        child: Image.asset(
+                          asset,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -65,7 +204,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     TextInputType keyboardType,
   ) async {
     final tempController = TextEditingController(text: controller.text);
-    
+
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -104,19 +243,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ],
       ),
     );
-    
-    tempController.dispose();
   }
 
   Future<void> _saveProfile() async {
     final authProvider = context.read<AuthProvider>();
-    
+
     setState(() => _isSaving = true);
 
     final success = await authProvider.updateProfile(
-      email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-      phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-      birthday: _birthdayController.text.isEmpty ? null : _birthdayController.text,
+      email: _emailController.text.trim().isEmpty
+          ? null
+          : _emailController.text.trim(),
+      phone: _phoneController.text.trim().isEmpty
+          ? null
+          : _phoneController.text.trim(),
+      birthday:
+          _birthdayController.text.isEmpty ? null : _birthdayController.text,
+      bio: _bioController.text.trim().isEmpty
+          ? null
+          : _bioController.text.trim(),
+      dietaryPreference: _selectedDiet,
     );
 
     setState(() => _isSaving = false);
@@ -124,7 +270,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? 'Profile updated successfully!' : 'Failed to update profile'),
+          content: Text(success
+              ? 'Profile updated successfully!'
+              : 'Failed to update profile'),
           backgroundColor: success ? Colors.green : Colors.red,
         ),
       );
@@ -138,7 +286,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
-    
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -165,35 +313,53 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Center(
                       child: Column(
                         children: [
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [
-                                Theme.of(context).colorScheme.secondary,
-                                Theme.of(context).colorScheme.tertiary
-                              ]),
-                              borderRadius: BorderRadius.circular(28),
+                          GestureDetector(
+                            onTap: _showAvatarPicker,
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                gradient: user?.avatar == null
+                                    ? LinearGradient(colors: [
+                                        Theme.of(context).colorScheme.secondary,
+                                        Theme.of(context).colorScheme.tertiary,
+                                      ])
+                                    : null,
+                                borderRadius: BorderRadius.circular(50),
+                             
+                              ),
+                              alignment: Alignment.center,
+                              clipBehavior: Clip.antiAliasWithSaveLayer,
+                              child: user?.avatar != null
+                                  ? Image.asset(
+                                      _resolveAvatarAsset(user!.avatar!),
+                                      fit: BoxFit.cover,
+                                      width: 80,
+                                      height: 80,
+                                      filterQuality: FilterQuality.high,
+                                    )
+                                  : Text(user?.initials ?? 'U',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .displayLarge
+                                          ?.copyWith(
+                                              color: AppColors.white,
+                                              fontSize: 32)),
                             ),
-                            alignment: Alignment.center,
-                            child: Text(
-                                user?.initials ?? 'U',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .displayLarge
-                                    ?.copyWith(
-                                        color: AppColors.white, fontSize: 32)),
                           ),
                           const SizedBox(height: 8),
-                          Text('Change photo',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .tertiary,
-                                      fontWeight: FontWeight.w500)),
+                          GestureDetector(
+                            onTap: _showAvatarPicker,
+                            child: Text('Change photo',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .tertiary,
+                                        fontWeight: FontWeight.w500)),
+                          ),
                         ],
                       ),
                     ),
@@ -202,47 +368,46 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     _FieldInput(hint: user?.customerName ?? '', enabled: false),
                     const SizedBox(height: 14),
                     _FieldLabel('EMAIL'),
-                    GestureDetector(
-                      onTap: () => _showEditDialog(context, 'Email', _emailController, TextInputType.emailAddress),
-                      child: _FieldInput(hint: _emailController.text.isEmpty ? 'Enter email' : _emailController.text, suffixIcon: Icons.edit_outlined),
-                    ),
+                    _FieldInput(
+                        hint: _emailController.text.isEmpty
+                            ? 'Not provided'
+                            : _emailController.text,
+                        enabled: false),
                     const SizedBox(height: 14),
                     _FieldLabel('PHONE'),
-                    GestureDetector(
-                      onTap: () => _showEditDialog(context, 'Phone', _phoneController, TextInputType.phone),
-                      child: _FieldInput(hint: _phoneController.text.isEmpty ? 'Enter phone number' : _phoneController.text, suffixIcon: Icons.edit_outlined),
-                    ),
+                    _FieldInput(
+                        hint: _phoneController.text.isEmpty
+                            ? 'Not provided'
+                            : _phoneController.text,
+                        enabled: false),
                     const SizedBox(height: 14),
                     _FieldLabel('BIRTHDAY'),
                     GestureDetector(
                       onTap: () => _selectDate(context),
-                      child: _FieldInput(hint: _birthdayController.text.isEmpty ? 'Select birthday' : _birthdayController.text, suffixIcon: Icons.calendar_today_outlined),
+                      child: _FieldInput(
+                          hint: _birthdayController.text.isEmpty
+                              ? 'Select birthday'
+                              : _birthdayController.text,
+                          suffixIcon: Icons.calendar_today_outlined),
                     ),
                     const SizedBox(height: 14),
                     _FieldLabel('BIO'),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                            color: Theme.of(context).dividerColor, width: 1.5),
-                      ),
-                      child: TextField(
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          hintText: 'Pastry enthusiast and weekend baker...',
-                          hintStyle: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(
-                                  color: Theme.of(context).colorScheme.outline),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
+                    TextField(
+                      controller: _bioController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Leafy Vegetable Lover',
+                        hintStyle:
+                            Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
+                        isDense: true,
+                        contentPadding: EdgeInsets.all(14),
+                        border: InputBorder.none,
+                        focusedBorder: InputBorder.none,
                       ),
                     ),
+
                     const SizedBox(height: 20),
                     _FieldLabel('DIETARY PREFERENCE'),
                     const SizedBox(height: 8),
@@ -286,7 +451,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: PrimaryButton(
-                  label: _isSaving ? 'Saving...' : 'Save Changes', 
+                  label: _isSaving ? 'Saving...' : 'Save Changes',
                   onTap: _isSaving ? null : _saveProfile,
                   isLoading: _isSaving),
             ),
@@ -326,7 +491,6 @@ class _FieldInput extends StatelessWidget {
     this.suffixIcon,
     this.enabled = true,
     this.isHint = true,
-
   });
 
   @override
@@ -334,7 +498,7 @@ class _FieldInput extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: enabled ? Theme.of(context).cardColor : Theme.of(context).dividerColor,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Theme.of(context).dividerColor, width: 1.5),
       ),
@@ -342,13 +506,8 @@ class _FieldInput extends StatelessWidget {
         children: [
           Expanded(
             child: Text(hint,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(
-                      color: isHint 
-                          ? Theme.of(context).colorScheme.outline 
-                          : Theme.of(context).colorScheme.onSurface,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
                     )),
           ),
           if (suffixIcon != null)
@@ -486,7 +645,8 @@ class SavedAddressesScreen extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                             side: BorderSide(
-                                color: Theme.of(context).dividerColor, width: 1.5),
+                                color: Theme.of(context).dividerColor,
+                                width: 1.5),
                           ),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
@@ -495,21 +655,26 @@ class SavedAddressesScreen extends StatelessWidget {
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(
-                                color: Theme.of(context).dividerColor,
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               alignment: Alignment.center,
-                              child: Text(a.icon,
-                                  style: const TextStyle(fontSize: 20)),
+                              child: Icon(
+                                a.icon,
+                                size: 20,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                             ),
-                            title: Row(
+                            title: Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
                               children: [
                                 Text(a.label,
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyLarge
-                                        ?.copyWith(fontWeight: FontWeight.w500)),
-                                const SizedBox(width: 6),
+                                        ?.copyWith(
+                                            fontWeight: FontWeight.w500)),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 7, vertical: 2),
@@ -552,6 +717,8 @@ class SavedAddressesScreen extends StatelessWidget {
                                     .textTheme
                                     .bodySmall
                                     ?.copyWith(fontSize: 12),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             trailing: IconButton(
@@ -579,10 +746,13 @@ class SavedAddressesScreen extends StatelessWidget {
                         ),
                         icon: Icon(Icons.add_rounded),
                         label: Text('Add New Address',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant)),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant)),
                       ),
                     ],
                   );
@@ -734,10 +904,8 @@ class _PaymentCard extends StatelessWidget {
           padding: const EdgeInsets.only(top: 2),
           child: Text(
             sub,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(fontSize: 11),
+            style:
+                Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -746,7 +914,10 @@ class _PaymentCard extends StatelessWidget {
             ? Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -966,8 +1137,14 @@ class _AddNewAddressScreenState extends State<AddNewAddressScreen> {
   final _cityController = TextEditingController();
   final _postcodeController = TextEditingController();
   String _selectedType = 'Delivery';
-  final List<String> _icons = ['🏠', '🏢', '🏪', '🍽️', '🏭'];
-  String _selectedIcon = '🏠';
+  final List<IconData> _icons = [
+    Icons.home_outlined,
+    Icons.business_outlined,
+    Icons.store_outlined,
+    Icons.restaurant_outlined,
+    Icons.factory_outlined,
+  ];
+  IconData _selectedIcon = Icons.home_outlined;
 
   @override
   void dispose() {
@@ -1097,7 +1274,6 @@ class _AddNewAddressScreenState extends State<AddNewAddressScreen> {
                         children: [
                           Expanded(
                             child: _TypeButton(
-                              icon: '🏠',
                               label: 'Delivery',
                               isSelected: _selectedType == 'Delivery',
                               onTap: () =>
@@ -1107,7 +1283,6 @@ class _AddNewAddressScreenState extends State<AddNewAddressScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: _TypeButton(
-                              icon: '🏪',
                               label: 'Pickup',
                               isSelected: _selectedType == 'Pickup',
                               onTap: () =>
@@ -1148,8 +1323,13 @@ class _AddNewAddressScreenState extends State<AddNewAddressScreen> {
                                       ),
                                     ),
                                     alignment: Alignment.center,
-                                    child: Text(icon,
-                                        style: const TextStyle(fontSize: 24)),
+                                    child: Icon(
+                                      icon,
+                                      size: 24,
+                                      color: _selectedIcon == icon
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1202,13 +1382,11 @@ class _AddNewAddressScreenState extends State<AddNewAddressScreen> {
 }
 
 class _TypeButton extends StatelessWidget {
-  final String icon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _TypeButton({
-    required this.icon,
     required this.label,
     required this.isSelected,
     required this.onTap,
@@ -1227,7 +1405,7 @@ class _TypeButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         alignment: Alignment.center,
-        child: Text('$icon $label',
+        child: Text(label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: isSelected
                       ? Theme.of(context).colorScheme.onTertiary

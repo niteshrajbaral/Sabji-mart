@@ -1,9 +1,11 @@
+import 'package:flutter/material.dart';
+
 /// Saved delivery / pickup address.
 class Address {
   final int id;
   final String label;
   final String address;
-  final String icon;
+  final IconData icon;
   final String type; // 'Pickup' | 'Delivery'
 
   const Address({

@@ -67,18 +67,6 @@ class CartScreen extends StatelessWidget {
           ),
         ),
         title: Text(l10n.yourCart),
-        actions: [
-          if (cart.items.isNotEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 24),
-                child: Text(
-                  '${cart.totalCount} ${cart.totalCount == 1 ? l10n.item : l10n.items}',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ),
-        ],
       ),
       body: SafeArea(
         child: Stack(
@@ -89,8 +77,18 @@ class CartScreen extends StatelessWidget {
                   child: cart.items.isEmpty
                       ? const EmptyCartView()
                       : ListView(
-                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 150),
+                          padding: width > 400? const EdgeInsets.fromLTRB(24, 0, 24, 150):const EdgeInsets.fromLTRB(16, 0, 16, 150),
                           children: [
+                             if (cart.items.isNotEmpty)
+                                
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 8, top: 8),
+                                    child: Text(
+                                      '${cart.totalCount} ${cart.totalCount == 1 ? l10n.item : l10n.items}',
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                SizedBox(height: 10,),
                             ...cart.items.map((item) {
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 14),
@@ -98,8 +96,7 @@ class CartScreen extends StatelessWidget {
                                   item: item,
                                   onTap: () => context.push('/home/product',
                                       extra: item.product),
-                                  onQuickAdd: () =>
-                                      cart.addProduct(item.product),
+                                   onQuickAdd: () => cart.addProduct(item.product),
                                   isFavourite:
                                       favProv.isFavourite(item.product.id),
                                   onToggleFavourite: () =>
@@ -115,7 +112,7 @@ class CartScreen extends StatelessWidget {
                                   style: AppTextStyles.headlineSmall),
                               const SizedBox(height: 12),
                               SizedBox(
-                                // height: width > 800 ? 250 : 230,
+                                height: 240,
                                 child: ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   physics: const BouncingScrollPhysics(),
@@ -217,8 +214,8 @@ class CartScreen extends StatelessWidget {
             if (cart.items.isNotEmpty)
               Positioned(
                 bottom: 0,
-                left: 0,
-                right: 0,
+                left: 24,
+                right: 24,
                 child: PrimaryButton(
                   label:
                       '${l10n.checkout} — Rs ${cart.total.toStringAsFixed(0)}',
@@ -311,21 +308,35 @@ class _CartItemCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Name + favourite
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.product.name,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.darkBrown,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
+                         // Name + favourite
+                         Row(
+                           crossAxisAlignment: CrossAxisAlignment.start,
+                           children: [
+                             Expanded(
+                               child: Column(
+                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                 children: [
+                                   Text(
+                                     item.product.name,
+                                     style: AppTextStyles.bodyMedium.copyWith(
+                                       color: AppColors.darkBrown,
+                                       fontSize: 15,
+                                       fontWeight: FontWeight.w500,
+                                     ),
+                                     overflow: TextOverflow.ellipsis,
+                                   ),
+                                   // Variant name next to product name
+                                   if (item.variantName != null && item.variantName!.isNotEmpty)
+                                     Text(
+                                       item.variantName!,
+                                       style: AppTextStyles.labelSmall.copyWith(
+                                         color: AppColors.textLight,
+                                         fontSize: 12,
+                                       ),
+                                     ),
+                                 ],
+                               ),
+                             ),
                             GestureDetector(
                               onTap: onToggleFavourite,
                               child: AnimatedSwitcher(
@@ -344,16 +355,6 @@ class _CartItemCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        // Variant name if selected
-                        if (item.variantName != null &&
-                            item.variantName!.isNotEmpty)
-                          Text(
-                            item.variantName!,
-                            style: AppTextStyles.labelSmall.copyWith(
-                              color: AppColors.textLight,
-                              fontSize: 12,
-                            ),
-                          ),
                         // Addon details
                         if (item.selectedAddonQuantities.isNotEmpty &&
                             item.selectedAddonQuantities.values

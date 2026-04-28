@@ -13,6 +13,37 @@ import 'package:go_router/go_router.dart';
 class FavouritesScreen extends StatelessWidget {
   const FavouritesScreen({super.key});
 
+  // Responsive grid breakpoints. Picks column count + aspect ratio per width.
+  SliverGridDelegate _gridDelegateFor(double width) {
+    final int crossAxisCount;
+    final double childAspectRatio;
+    if (width >= 1400) {
+      crossAxisCount = 6;
+      childAspectRatio = 0.82;
+    } else if (width >= 1100) {
+      crossAxisCount = 5;
+      childAspectRatio = 0.82;
+    } else if (width >= 800) {
+      crossAxisCount = 4;
+      childAspectRatio = 0.78;
+    } else if (width >= 600) {
+      crossAxisCount = 3;
+      childAspectRatio = 0.76;
+    } else if (width >= 400) {
+      crossAxisCount = 2;
+      childAspectRatio = 0.74;
+    } else {
+      crossAxisCount = 2;
+      childAspectRatio = 0.66;
+    }
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: crossAxisCount,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: childAspectRatio,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final productProv = context.watch<ProductProvider>();
@@ -27,14 +58,12 @@ class FavouritesScreen extends StatelessWidget {
         appBar: AppBar(
           leading: Padding(
             padding: const EdgeInsets.only(left: 8.0),
-            
             child: IconButton(
-                    style: IconButton.styleFrom(
-                    backgroundColor: AppColors.transparent,
-                    shadowColor: AppColors.transparent,
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.transparent,
+                shadowColor: AppColors.transparent,
               ),
-              icon: const Icon(
-                Icons.arrow_back),
+              icon: const Icon(Icons.arrow_back),
               onPressed: () => context.go('/home'),
             ),
           ),
@@ -45,11 +74,12 @@ class FavouritesScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+                padding: width > 400
+                    ? const EdgeInsets.fromLTRB(24, 0, 24, 20)
+                    : const EdgeInsets.fromLTRB(16, 0, 16, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    
                     const SizedBox(height: 6),
                     Text(
                         '${favs.length} saved item${favs.length != 1 ? 's' : ''}',
@@ -62,13 +92,10 @@ class FavouritesScreen extends StatelessWidget {
                 child: favs.isEmpty
                     ? _EmptyFavourites()
                     : GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 80),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: width > 800 ? 3 : 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: width>800? 1.6 : 0.8,
-                    ),
+                        padding: width > 400
+                            ? const EdgeInsets.fromLTRB(24, 0, 24, 100)
+                            : const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                        gridDelegate: _gridDelegateFor(width),
                         itemCount: favs.length,
                         itemBuilder: (_, i) {
                           final p = favs[i];

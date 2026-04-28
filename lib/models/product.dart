@@ -107,3 +107,17 @@ class Product {
     );
   }
 }
+
+extension ProductDefaults on Product {
+  /// Price to show by default: first available variant item's price when the
+  /// product has variants, otherwise the base price.
+  double get defaultDisplayPrice {
+    if (variants.isEmpty || variants.first.variantItems.isEmpty) return price;
+    final items = variants.first.variantItems;
+    final firstAvailable = items.firstWhere(
+      (i) => i.isAvailable,
+      orElse: () => items.first,
+    );
+    return firstAvailable.price;
+  }
+}

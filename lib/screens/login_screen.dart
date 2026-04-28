@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   bool _isLoading = false;
   bool _obscurePassword = true;
-  
+
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleSubmit() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
-      
+
       final authProvider = context.read<AuthProvider>();
       bool success;
 
@@ -75,8 +75,10 @@ class _LoginScreenState extends State<LoginScreen> {
           );
 
           // Check if we came from checkout flow
-          final isFromCheckout = GoRouterState.of(context).uri.queryParameters['from'] == 'checkout';
-          
+          final isFromCheckout =
+              GoRouterState.of(context).uri.queryParameters['from'] ==
+                  'checkout';
+
           if (isFromCheckout) {
             // Clear cart only for checkout flow
             context.read<CartProvider>().clear();
@@ -87,14 +89,15 @@ class _LoginScreenState extends State<LoginScreen> {
             context.go('/profile');
           }
         } else {
-          // Registration success - redirect to OTP verification
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Verification code sent to your email!'),
-              backgroundColor: AppColors.darkBrown,
-            ),
-          );
-          
+            // Registration success - redirect to OTP verification
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(authProvider.infoMessage ??
+                    'Verification code sent to your email!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+
           // Navigate to OTP verification screen with email
           context.push(
             '/cart/checkout/verify-email',
@@ -117,7 +120,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+    final width = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -132,14 +136,16 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: width > 400
+              ? const EdgeInsets.all(24)
+              : const EdgeInsets.fromLTRB(16, 24, 16, 24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
-                
+
                 // Logo/Icon
                 Container(
                   width: 80,
@@ -165,32 +171,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: AppColors.cream,
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Title
                 Text(
                   _isLogin ? l10n.welcomeBack : l10n.createAccount,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.darkBrown,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.darkBrown,
+                      ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Subtitle
                 Text(
                   _isLogin ? l10n.loginSubtitle : l10n.registerSubtitle,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textLight,
-                  ),
+                        color: AppColors.textLight,
+                      ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 // Name field (only for register)
                 if (!_isLogin) ...[
                   TextFormField(
@@ -228,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                
+
                 // Email field
                 TextFormField(
                   controller: _emailController,
@@ -247,9 +253,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Password field
                 TextFormField(
                   controller: _passwordController,
@@ -258,10 +264,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: l10n.password,
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
+                      style: IconButton.styleFrom(
+                        backgroundColor: Color.fromARGB(1, 0, 0, 0),
+                      ),
                       icon: Icon(
-                        _obscurePassword 
-                          ? Icons.visibility_outlined 
-                          : Icons.visibility_off_outlined,
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
                       ),
                       onPressed: () {
                         setState(() => _obscurePassword = !_obscurePassword);
@@ -278,10 +287,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                
+
                 if (!_isLogin) ...[
                   const SizedBox(height: 16),
-                  
+
                   // Confirm Password field
                   TextFormField(
                     controller: _confirmPasswordController,
@@ -301,32 +310,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                 ],
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Forgot password (only for login)
                 if (_isLogin)
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        // TODO: Implement forgot password
+                        context.push('/login/forgot-password');
                       },
                       child: Text(l10n.forgotPassword),
                     ),
                   ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Submit button
                 PrimaryButton(
                   label: _isLogin ? l10n.login : l10n.register,
                   onTap: _handleSubmit,
                   isLoading: _isLoading,
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Divider
                 Row(
                   children: [
@@ -336,16 +345,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         l10n.or,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textLight,
-                        ),
+                              color: AppColors.textLight,
+                            ),
                       ),
                     ),
                     const Expanded(child: Divider()),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // // Social login buttons
                 // _SocialButton(
                 //   icon: Icons.g_mobiledata,
@@ -354,9 +363,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 //     // TODO: Implement Google sign in
                 //   },
                 // ),
-                
+
                 // const SizedBox(height: 32),
-                
+
                 // Toggle login/register
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

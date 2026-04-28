@@ -31,6 +31,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final addr = context.watch<AddressProvider>().selected;
     final l10n = AppLocalizations.of(context)!;
     final step1Label = _stepLabel(addr, l10n);
+    final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -38,6 +39,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         leading: Padding(
           padding: const EdgeInsets.only(left: 8.0),
           child: IconButton(
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.transparent,
+              shadowColor: AppColors.transparent,
+            ),
             icon: const Icon(Icons.chevron_left_rounded, size: 28),
             onPressed: () => context.pop(),
           ),
@@ -53,7 +58,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     children: [
                       // Step indicator
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+                        padding: width > 400?const EdgeInsets.fromLTRB(24, 0, 24, 20):const EdgeInsets.fromLTRB(16, 0, 16, 20),
                         child: Row(
                           children: [
                             _StepIndicator(
@@ -92,8 +97,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       // CTA Button
                       Positioned(
                         bottom: 0,
-                        left: 0,
-                        right: 0,
+                        left: 24,
+                        right: 24,
                         child: PrimaryButton(
                           label: _step < 2
                               ? l10n.continueBtn
@@ -127,28 +132,96 @@ class _StepIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final active = step <= current;
     final isCurrent = step == current;
+    final isCompleted = step < current;
+    
     return Expanded(
       child: Column(
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 400),
-            height: 3,
-            decoration: BoxDecoration(
-              color: active
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).dividerColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
+          Row(
+            children: [
+              // Left connector line
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: active
+                        ? AppColors.darkBrown
+                        : AppColors.beige,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+              
+              // Step circle with number
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 30,
+                height: 30,
+                margin: const EdgeInsets.symmetric(horizontal: 6),
+                decoration: BoxDecoration(
+                  color: isCompleted 
+                      ? AppColors.darkBrown 
+                      : isCurrent 
+                          ? AppColors.darkBrown 
+                          : AppColors.warmWhite,
+                  border: Border.all(
+                    color: active ? AppColors.darkBrown : AppColors.beige,
+                    width: 2,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: isCurrent
+                      ? [
+                          BoxShadow(
+                            color: AppColors.darkBrown.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: isCompleted
+                      ? const Icon(
+                          Icons.check_rounded,
+                          color: AppColors.cream,
+                          size: 15,
+                        )
+                      : Text(
+                          '$step',
+                          style: TextStyle(
+                            color: active ? AppColors.cream : AppColors.textLight,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                ),
+              ),
+              
+              // Right connector line
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: isCompleted
+                        ? AppColors.darkBrown
+                        : AppColors.beige,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: active
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
-                ),
+            style: TextStyle(
+              color: active ? AppColors.darkBrown : AppColors.textLight,
+              fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
+              fontSize: 13,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -316,7 +389,11 @@ class _AddressBottomSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         alignment: Alignment.center,
-                        child: Text(addr.icon, style: const TextStyle(fontSize: 18)),
+                        child: Icon(
+                          addr.icon,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -516,11 +593,25 @@ class _Step2 extends StatelessWidget {
                   children: [
                     Expanded(
                         flex: 4,
-                        child: Text(
-                          item.product.name,
-                          style: textTheme.bodySmall,
-                          overflow: TextOverflow.ellipsis,
-                        )),
+                         child: Column(
+                           crossAxisAlignment: CrossAxisAlignment.start,
+                           children: [
+                             Text(
+                               item.product.name,
+                               style: textTheme.bodySmall,
+                               overflow: TextOverflow.ellipsis,
+                             ),
+                             // Show selected variant name
+                             if (item.variantName != null && item.variantName!.isNotEmpty)
+                               Text(
+                                 item.variantName!,
+                                 style: textTheme.bodySmall?.copyWith(
+                                   color: textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                                   fontSize: 11,
+                                 ),
+                               ),
+                           ],
+                         )),
                     Expanded(
                         child: Text('x ${item.quantity}',
                             textAlign: TextAlign.center,
@@ -550,13 +641,13 @@ class _Step2 extends StatelessWidget {
                       final addon = item.product.addons[addonIndex];
                       return Padding(
                         padding: const EdgeInsets.only(left: 16, top: 2),
-                        child: Text(
-                          '  ${addon.name} x$addonQty - Rs ${(addon.price * addonQty).toStringAsFixed(0)}',
-                          style: textTheme.bodySmall?.copyWith(
-                            color: textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-                            fontSize: 11,
-                          ),
-                        ),
+                         child: Text(
+                           '  ${addon.name} x${addonQty * item.quantity} - Rs ${(addon.price * addonQty * item.quantity).toStringAsFixed(0)}',
+                           style: textTheme.bodySmall?.copyWith(
+                             color: textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                             fontSize: 11,
+                           ),
+                         ),
                       );
                     }
                     return const SizedBox.shrink();

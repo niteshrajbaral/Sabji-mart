@@ -74,7 +74,9 @@ class AuthService {
   }
 
   /// Registers a new user.
-  Future<UserModel> register({
+  /// Returns a verification message on success (email verification required).
+  /// Throws on failure.
+  Future<String> register({
     required String name,
     required String email,
     required String phone,
@@ -84,10 +86,10 @@ class AuthService {
     try {
       // Use the exact registration API endpoint provided
       final url = Uri.parse('https://api.beta.order.rebuzzpos.com/api/auth/register');
-      
+
       debugPrint('[AuthService] Registering user to: $url');
       debugPrint('[AuthService] Request body: name=$name, email=$email, phone=$phone, password=${'*' * password.length}');
-      
+
       final response = await http.post(
         url,
         headers: {
@@ -109,15 +111,14 @@ class AuthService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
-        
-        if (data['status'] == 'success') {
-          final user = UserModel.fromJson(data);
-          
-          // Store user data in shared preferences
-          await _saveUser(user);
-          
-          debugPrint('[AuthService] Registration successful for user: ${user.userId}');
-          return user;
+
+        if (data['success'] == true) {
+          debugPrint('[AuthService] Registration successful, verification email sent');
+          final nested = data['data'];
+          final message = (nested is Map ? nested['message'] : null) ??
+              data['message'] ??
+              'Please verify your email';
+          return message.toString();
         } else {
           throw Exception(data['message'] ?? 'Registration failed');
         }
@@ -240,9 +241,161 @@ class AuthService {
     }
   }
 
+  /// Resends the verification token to the given email.
+  /// POST /api/auth/send-token  —  body: { "email": ... }
+  /// Success response: { "status": "success", "message": "Token has been sent this email." }
+  Future<String> resendVerificationCode({
+    required String email,
+  }) async {
+    try {
+      final url =
+          Uri.parse('https://api.beta.order.rebuzzpos.com/api/auth/send-token');
+
+      debugPrint('[AuthService] Resending verification code for: $email');
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'app': 'customer',
+        },
+        body: jsonEncode({'email': email}),
+      );
+
+      debugPrint(
+          '[AuthService] Resend verification response status: ${response.statusCode}');
+      debugPrint('[AuthService] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success') {
+          return (data['message'] ?? 'Verification code resent').toString();
+        } else {
+          throw Exception(
+              data['message'] ?? 'Failed to resend verification code');
+        }
+      } else {
+        String errorMessage = 'Resend failed: ${response.statusCode}';
+        try {
+          final errorData = jsonDecode(response.body);
+          if (errorData is Map) {
+            errorMessage =
+                errorData['message'] ?? errorData['error'] ?? errorMessage;
+          }
+        } catch (_) {}
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      debugPrint('[AuthService] Resend verification error: $e');
+      rethrow;
+    }
+  }
+
+  /// Resets the user's password using a token received via /auth/send-token.
+  /// PATCH /api/auth/reset-password — body: { resetToken, newPassword, confirmPassword }
+  /// Success response: { "success": true }
+  Future<void> resetPassword({
+    required String resetToken,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final url = Uri.parse(
+          'https://api.beta.order.rebuzzpos.com/api/auth/reset-password');
+
+      debugPrint('[AuthService] Resetting password with token');
+
+      final response = await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'app': 'customer',
+        },
+        body: jsonEncode({
+          'resetToken': resetToken,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        }),
+      );
+
+      debugPrint(
+          '[AuthService] Reset password response status: ${response.statusCode}');
+      debugPrint('[AuthService] Response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          return;
+        }
+        throw Exception(data['message'] ?? 'Password reset failed');
+      }
+
+      String errorMessage = 'Password reset failed: ${response.statusCode}';
+      try {
+        final errorData = jsonDecode(response.body);
+        if (errorData is Map) {
+          errorMessage =
+              errorData['message'] ?? errorData['error'] ?? errorMessage;
+        }
+      } catch (_) {}
+      throw Exception(errorMessage);
+    } catch (e) {
+      debugPrint('[AuthService] Reset password error: $e');
+      rethrow;
+    }
+  }
+
   /// Gets the current session token if user is logged in.
   Future<String?> getSessionToken() async {
     final user = await getStoredUser();
     return user?.sessionToken;
+  }
+
+  /// Fetches latest user profile from /api/auth/me endpoint
+  Future<UserModel> fetchUserProfile() async {
+    try {
+      final url = Uri.parse('https://api.beta.order.rebuzzpos.com/api/auth/me');
+      final sessionToken = await getSessionToken();
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'app': 'customer',
+          'Authorization': 'Bearer $sessionToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // Preserve locally-stored fields the API doesn't return (birthday, bio).
+        final existing = await getStoredUser();
+
+        final userData = {
+          'userId': data['_id'],
+          'customerName': data['name'],
+          'email': data['email'],
+          'phone': data['phone'],
+          'sessionToken': sessionToken,
+          'birthday': existing?.birthday,
+          'bio': existing?.bio,
+          'avatar': existing?.avatar,
+          'dietaryPreference': existing?.dietaryPreference,
+        };
+
+        final updatedUser = UserModel.fromJson(userData);
+        await _saveUser(updatedUser);
+        return updatedUser;
+      } else {
+        throw Exception('Failed to fetch profile: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('[AuthService] Fetch profile error: $e');
+      rethrow;
+    }
   }
 }

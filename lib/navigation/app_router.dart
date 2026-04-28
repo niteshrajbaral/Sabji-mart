@@ -16,6 +16,8 @@ import '../screens/recent_orders_screen.dart';
 import '../screens/favourites_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/profile_sub_screens.dart';
+import '../screens/forgot_password_email_screen.dart';
+import '../screens/password_reset_screen.dart';
 import '../providers/auth_provider.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -87,6 +89,21 @@ final router = GoRouter(
     ),
   ),
   routes: [
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+      routes: [
+        GoRoute(
+          path: 'forgot-password',
+          builder: (context, state) => const ForgotPasswordEmailScreen(),
+        ),
+        GoRoute(
+          path: 'forgot-password/reset',
+          builder: (context, state) => const PasswordResetScreen(),
+        ),
+      ],
+    ),
+
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return AppShell(navigationShell: navigationShell);

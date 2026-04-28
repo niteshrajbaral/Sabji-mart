@@ -218,8 +218,11 @@ class AddressBottomSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       alignment: Alignment.center,
-                      child:
-                          Text(addr.icon, style: const TextStyle(fontSize: 18)),
+                      child: Icon(
+                        addr.icon,
+                        size: 18,
+                        color: AppColors.darkBrown,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
