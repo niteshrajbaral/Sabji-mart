@@ -5,8 +5,10 @@ import '../../components/loyalty_card.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_colors.dart';
 import '../l10n/app_localizations.dart';
+import '../../config/api_config.dart';
 import '../providers/locale_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/orders_provider.dart';
 import '../../components/service_icon.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -17,251 +19,282 @@ class ProfileScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
-    
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
-        children: [
-          Text(l10n.myProfile,
-              style: Theme.of(context).textTheme.displayMedium),
-          const SizedBox(height: 20),
+    final width = MediaQuery.of(context).size.width;
 
-          // Profile card
-          GestureDetector(
-            onTap: () => context.push('/profile/edit'),
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFFFFAF3), Color(0x66F5E6D3)],
-                ),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .tertiary
-                        .withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 68,
-                    height: 68,
-                    decoration: BoxDecoration(
-                      gradient: Theme.of(context)
-                          .extension<AppThemeExtension>()
-                          ?.primaryGradient,
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      authProvider.userInitials,
-                      style: Theme.of(context)
-                          .textTheme
-                          .displayLarge
-                          ?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              fontSize: 28),
-                    ),
+    // Kick off a one-time fetch if we're logged in but the list hasn't loaded
+    // yet (e.g. user landed here before visiting home).
+    final ordersProv = context.watch<OrdersProvider>();
+    if (authProvider.isAuthenticated &&
+        ordersProv.orders.isEmpty &&
+        !ordersProv.isLoading &&
+        ordersProv.error == null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+          (_) => context.read<OrdersProvider>().fetchOrders());
+    }
+    // Only count orders for this app's configured business.
+    final ordersCount = ordersProv.orders
+        .where((o) => o.businessId == ApiConfig.businessId)
+        .length;
+    final myOrdersSub = !authProvider.isAuthenticated
+        ? 'No orders yet'
+        : ordersProv.isLoading && ordersCount == 0
+            ? 'Loading…'
+            : ordersCount == 0
+                ? 'No orders yet'
+                : '$ordersCount ${ordersCount == 1 ? 'order' : 'orders'}';
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: ListView(
+          padding: width > 400
+              ? const EdgeInsets.fromLTRB(24, 8, 24, 100)
+              : const EdgeInsets.fromLTRB(16, 8, 16, 100),
+          children: [
+            Text(l10n.myProfile,
+                style: Theme.of(context).textTheme.displayMedium),
+            const SizedBox(height: 20),
+
+            // Profile card
+            GestureDetector(
+              onTap: user != null ? () => context.push('/profile/edit') : null,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFFFFAF3), Color(0x66F5E6D3)],
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user?.customerName ?? 'Guest User',
-                          style: Theme.of(context).textTheme.headlineLarge,
-                        ),
-                        Text(
-                          user != null 
-                              ? 'Logged in'
-                              : 'Not logged in',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(fontSize: 13),
-                        ),
-                        const SizedBox(height: 8),
-                        if (user != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .tertiary
-                                  .withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(l10n.vipMember,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                    ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .tertiary,
-                                        fontSize: 11)),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .tertiary
+                          .withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        gradient: Theme.of(context)
+                            .extension<AppThemeExtension>()
+                            ?.primaryGradient,
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        authProvider.userInitials,
+                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontSize: 28),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.customerName ?? 'Guest User',
+                            style: Theme.of(context).textTheme.headlineLarge,
                           ),
+                          Text(
+                            user != null ? 'Logged in' : 'Not logged in',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(fontSize: 13),
+                          ),
+                          const SizedBox(height: 8),
+                          if (user != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .tertiary
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(l10n.vipMember,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                      ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .tertiary,
+                                          fontSize: 11)),
+                            ),
+                        ],
+                      ),
+                     ),
+                    if (user != null)
+                      Icon(Icons.chevron_right_rounded,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          size: 22),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Loyalty card
+            const LoyaltyCard(),
+            const SizedBox(height: 24),
+
+            // Menu sections
+            _SectionHeader(label: l10n.ordersHistory),
+            const SizedBox(height: 8),
+            _MenuTile(
+                icon: Icons.local_shipping_outlined,
+                label: l10n.myOrders,
+                sub: myOrdersSub,
+                onTap: () => context.push('/profile/orders')),
+            const SizedBox(height: 16),
+            _SectionHeader(label: l10n.account),
+            const SizedBox(height: 8),
+            _MenuTile(
+                icon: Icons.location_on_outlined,
+                label: l10n.savedAddresses,
+                sub: l10n.manageLocationsSub,
+                onTap: () => context.push('/profile/addresses')),
+            const SizedBox(height: 16),
+            _SectionHeader(label: l10n.preferences),
+            const SizedBox(height: 8),
+            _MenuTile(
+                icon: Icons.notifications_outlined,
+                label: l10n.notifications,
+                sub: l10n.pushEmailSub,
+                onTap: () => context.push('/profile/notifications')),
+            const SizedBox(height: 16),
+            _SectionHeader(label: l10n.language),
+            const SizedBox(height: 8),
+            Consumer<LocaleProvider>(
+              builder: (context, localeProvider, _) {
+                final isNepali = localeProvider.locale.languageCode == 'ne';
+                return _LanguageToggle(
+                  isNepali: isNepali,
+                  onToggle: () => localeProvider.toggleLocale(),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // Sign out button
+            if (authProvider.isAuthenticated)
+              GestureDetector(
+                onTap: () async {
+                  // Show confirmation dialog
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(l10n.signOut),
+                      content: const Text('Are you sure you want to sign out?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: Text(
+                            l10n.signOut,
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.error),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  Icon(Icons.chevron_right_rounded,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      size: 22),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
+                  );
 
-          // Loyalty card
-          const LoyaltyCard(),
-          const SizedBox(height: 24),
-
-          // Menu sections
-          _SectionHeader(label: l10n.ordersHistory),
-          const SizedBox(height: 8),
-          _MenuTile(
-              icon: Icons.local_shipping_outlined,
-              label: l10n.myOrders,
-              sub: l10n.recentOrdersSub,
-              onTap: () => context.push('/profile/orders')),
-          const SizedBox(height: 16),
-          _SectionHeader(label: l10n.account),
-          const SizedBox(height: 8),
-          _MenuTile(
-              icon: Icons.location_on_outlined,
-              label: l10n.savedAddresses,
-              sub: l10n.manageLocationsSub,
-              onTap: () => context.push('/profile/addresses')),
-          const SizedBox(height: 16),
-          _SectionHeader(label: l10n.preferences),
-          const SizedBox(height: 8),
-          _MenuTile(
-              icon: Icons.notifications_outlined,
-              label: l10n.notifications,
-              sub: l10n.pushEmailSub,
-              onTap: () => context.push('/profile/notifications')),
-          const SizedBox(height: 16),
-          _SectionHeader(label: l10n.language),
-          const SizedBox(height: 8),
-          Consumer<LocaleProvider>(
-            builder: (context, localeProvider, _) {
-              final isNepali = localeProvider.locale.languageCode == 'ne';
-              return _LanguageToggle(
-                isNepali: isNepali,
-                onToggle: () => localeProvider.toggleLocale(),
-              );
-            },
-          ),
-          const SizedBox(height: 20),
-
-          // Sign out button
-          if (authProvider.isAuthenticated)
-            GestureDetector(
-              onTap: () async {
-                // Show confirmation dialog
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text(l10n.signOut),
-                    content: const Text('Are you sure you want to sign out?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: Text(
-                          l10n.signOut,
-                          style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  if (confirmed == true && context.mounted) {
+                    await context.read<AuthProvider>().logout();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Signed out successfully'),
+                          backgroundColor: Colors.green,
                         ),
+                      );
+                    }
+                  }
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .errorContainer
+                        .withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .error
+                          .withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.logout_rounded,
+                        color: Theme.of(context).colorScheme.error,
+                        size: 18,
                       ),
+                      const SizedBox(width: 8),
+                      Text(l10n.signOut,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                              fontWeight: FontWeight.w500)),
                     ],
                   ),
-                );
-
-                if (confirmed == true && context.mounted) {
-                  await context.read<AuthProvider>().logout();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Signed out successfully'),
-                        backgroundColor: Colors.green,
+                ),
+              )
+            else
+              // Login button for non-authenticated users
+              GestureDetector(
+                onTap: () => context.push('/cart/checkout/login'),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: Theme.of(context)
+                        .extension<AppThemeExtension>()
+                        ?.primaryGradient,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.login_rounded,
+                        color: AppColors.cream,
+                        size: 18,
                       ),
-                    );
-                  }
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .errorContainer
-                      .withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
-                    width: 1,
+                      const SizedBox(width: 8),
+                      Text(l10n.login,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.cream,
+                              fontWeight: FontWeight.w500)),
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.logout_rounded,
-                      color: Theme.of(context).colorScheme.error,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(l10n.signOut,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.error,
-                            fontWeight: FontWeight.w500)),
-                  ],
-                ),
               ),
-            )
-          else
-            // Login button for non-authenticated users
-            GestureDetector(
-              onTap: () => context.push('/cart/checkout/login'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  gradient: Theme.of(context)
-                      .extension<AppThemeExtension>()
-                      ?.primaryGradient,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.login_rounded,
-                      color: AppColors.cream,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(l10n.login,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.cream,
-                            fontWeight: FontWeight.w500)),
-                  ],
-                ),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
+
 
 class _SectionHeader extends StatelessWidget {
   final String label;

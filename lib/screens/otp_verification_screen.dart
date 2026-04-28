@@ -20,6 +20,7 @@ class OtpVerificationScreen extends StatefulWidget {
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   bool _isLoading = false;
+  bool _isResending = false;
   final _formKey = GlobalKey<FormState>();
   final List<TextEditingController> _otpControllers = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
@@ -69,8 +70,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           ),
         );
 
-        // Navigate to profile or home screen
-        context.go('/profile');
+        // Navigate to order success screen
+        context.go('/cart/checkout/success');
       } else {
         final errorMessage = authProvider.error ?? 'Verification failed';
         ScaffoldMessenger.of(context).showSnackBar(
@@ -83,8 +84,39 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
+  void _handleResendCode() async {
+    setState(() => _isResending = true);
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.resendVerificationCode(
+      email: widget.email,
+    );
+
+    if (!mounted) return;
+    setState(() => _isResending = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.infoMessage ?? 'Verification code resent!'),
+          backgroundColor: AppColors.darkBrown,
+        ),
+      );
+    } else {
+      final errorMessage = authProvider.error ?? 'Failed to resend code';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: AppColors.terracotta,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+     final width = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -99,7 +131,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: width > 400 ? const EdgeInsets.all(24) : const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
             child: Column(
@@ -175,6 +207,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.all(Radius.circular(12)),
                           ),
+                          contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                          isDense: true,
                         ),
                         onChanged: (value) => _handleOtpChanged(value, index),
                         validator: (value) {
@@ -208,22 +242,23 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     TextButton(
-                      onPressed: () {
-                        // TODO: Implement resend code functionality
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Verification code resent!'),
-                            backgroundColor: AppColors.darkBrown,
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'Resend',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.darkBrown,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      onPressed: _isResending ? null : _handleResendCode,
+                      child: _isResending
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.darkBrown,
+                              ),
+                            )
+                          : Text(
+                              'Resend',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.darkBrown,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
                   ],
                 ),

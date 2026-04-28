@@ -26,6 +26,7 @@ class GridProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    final isWide = width > 800;
     final cartData = context.select<CartProvider, (int, double?)>((cart) {
       final items =
           cart.items.where((i) => i.product.id == product.id).toList();
@@ -34,33 +35,54 @@ class GridProductCard extends StatelessWidget {
       return (qty, variantPrice);
     });
     final qty = cartData.$1;
-    final variantPrice = cartData.$2;
+    final displayPrice = cartData.$2 ?? product.defaultDisplayPrice;
 
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
-        // height: width > 800 ? 150 : 150,
-        child: Card(
-          clipBehavior: Clip.hardEdge,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image area
-              Stack(
+      child: Card(
+        clipBehavior: Clip.hardEdge,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image area
+            AspectRatio(
+              aspectRatio: 1.2,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  AspectRatio(
-                    aspectRatio: 1.2,
-                    child: ClipRRect(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(AppDecorations.radiusM)),
-                      child: Image.network(
-                        product.image,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                      ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(AppDecorations.radiusM)),
+                    child: Image.network(
+                      product.image,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
                     ),
                   ),
-                  // Favourite button
+                  // Variant badge (top-left) — compact indicator that frees
+                  // vertical space in the info area.
+                  if (product.variants.isNotEmpty)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.white.withValues(alpha: 0.9),
+                          borderRadius:
+                              BorderRadius.circular(AppDecorations.radiusXS),
+                        ),
+                        child: Text(
+                          '${product.variants.first.variantItems.length} opts',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.darkBrown,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
                   Positioned(
                     top: 8,
                     right: 8,
@@ -92,46 +114,50 @@ class GridProductCard extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
 
-              // Info + counter
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 6, 10, 2),
+            // Info — name on top, price + counter anchored at bottom
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                 child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.darkBrown,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.darkBrown,
+                        fontWeight: FontWeight.w500,
+                        fontSize: isWide ? 13 : 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                    // const Spacer(),
+                    Expanded(
+                      child: Text(
+                        'Rs ${displayPrice.toStringAsFixed(0)}',
+                        style: AppTextStyles.price,
                         maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 1),
-                      Row(
-                        children: [
-                           Expanded(
-                             child: Text(
-                               'Rs ${(variantPrice ?? product.price).toStringAsFixed(0)}',
-                               style: AppTextStyles.price,
-                             ),
-                           ),
-                        ],
-                      ),
-                      Row(children: [
-                        const SizedBox(width: 4),
-                        const Spacer(),
-                        _GridAddCounter(
-                          qty: qty,
-                          productId: product.id,
-                          onAdd: onQuickAdd,
-                        ),
-                      ]),
-                    ]),
+                    ),
+                    // const SizedBox(width: 6),
+                    Align(
+                        alignment: AlignmentGeometry.bottomEnd,
+                        child: Padding(
+                          padding: EdgeInsetsGeometry.only(left: 0),
+                          child: _GridAddCounter(
+                            qty: qty,
+                            productId: product.id,
+                            onAdd: onQuickAdd,
+                          ),
+                        )),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -213,8 +239,8 @@ class _GridAddCounterState extends State<_GridAddCounter> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeInOut,
-      height: 32,
-      width: hasItems ? 88 : 32,
+      height: 28,
+      width: hasItems ? 88 : 28,
       decoration: BoxDecoration(
         color: cs.onSurface.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(AppDecorations.radiusXS),
@@ -224,32 +250,33 @@ class _GridAddCounterState extends State<_GridAddCounter> {
           ? Row(
               children: [
                 // − decrement
-                Expanded(
-                  child: GestureDetector(
-                      onTap: () => context
-                          .read<CartProvider>()
-                          .updateById(widget.productId, widget.qty - 1),
-                      child: AnimatedContainer(
-                        width: 32,
-                        height: 32,
-                        duration: const Duration(milliseconds: 150),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(AppDecorations.radiusXS),
-                          color: AppColors.cream,
-                        ),
-                        child: Icon(Icons.remove_rounded,
-                            color: AppColors.darkBrown, size: 22),
-                      )),
-                ),
+                GestureDetector(
+                    onTap: () => context
+                        .read<CartProvider>()
+                        .updateById(widget.productId, widget.qty - 1),
+                    child: AnimatedContainer(
+                      width: 28,
+                      height: 28,
+                      duration: const Duration(milliseconds: 150),
+                      decoration: BoxDecoration(
+                        borderRadius:
+                            BorderRadius.circular(AppDecorations.radiusXS),
+                        color: AppColors.cream,
+                      ),
+                      child: Icon(Icons.remove_rounded,
+                          color: AppColors.darkBrown, size: 22),
+                    )),
+
                 // Animated count or TextField
-                Expanded(
+                SizedBox(
+                  width: 28,
                   child: GestureDetector(
                     onTap: _startEditing,
                     child: _isEditing
                         ? Align(
                             alignment: Alignment.center,
                             child: SizedBox(
-                              height: 32,
+                              height: 28,
                               child: Align(
                                 alignment: Alignment.center,
                                 child: TextField(
@@ -259,7 +286,7 @@ class _GridAddCounterState extends State<_GridAddCounter> {
                                   textAlign: TextAlign.center,
                                   cursorColor: AppColors.black,
                                   style: AppTextStyles.labelSmall.copyWith(
-                                    color:AppColors.black,
+                                    color: AppColors.black,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 13,
                                     height: 2.1,
@@ -293,32 +320,32 @@ class _GridAddCounterState extends State<_GridAddCounter> {
                   ),
                 ),
                 // + increment
-                Expanded(
-                  child: GestureDetector(
-                      onTap: widget.onAdd,
-                      child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(AppDecorations.radiusXS),
-                              color: AppColors.darkBrown),
-                          child: const Icon(
-                            Icons.add_rounded,
-                            color: AppColors.cream,
-                            size: 22,
-                          ))),
-                ),
+                GestureDetector(
+                    onTap: widget.onAdd,
+                    child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                            borderRadius:
+                                BorderRadius.circular(AppDecorations.radiusXS),
+                            color: AppColors.darkBrown),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: AppColors.cream,
+                          size: 22,
+                        ))),
               ],
             )
           : GestureDetector(
               onTap: widget.onAdd,
               child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  width: 32,
-                  height: 32,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppDecorations.radiusXS),
+                      borderRadius:
+                          BorderRadius.circular(AppDecorations.radiusXS),
                       color: AppColors.darkBrown),
                   child: const Icon(
                     Icons.add_rounded,

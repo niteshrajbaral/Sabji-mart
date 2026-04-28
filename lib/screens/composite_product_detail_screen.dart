@@ -58,6 +58,7 @@ class _CompositeProductDetailScreenState
     final favProv = context.watch<FavouritesProvider>();
     final isFav = favProv.isFavourite(widget.product.id);
     final totalPrice = widget.product.price * _quantity;
+    final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -149,7 +150,7 @@ class _CompositeProductDetailScreenState
               // ── Content ─────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 140),
+                  padding: width > 400 ? const EdgeInsets.fromLTRB(24, 24, 24, 140):const EdgeInsets.fromLTRB(16, 24, 16, 140),
                   decoration: BoxDecoration(
                     color: Theme.of(context).scaffoldBackgroundColor,
                     borderRadius:

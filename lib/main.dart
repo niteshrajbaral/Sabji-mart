@@ -12,6 +12,7 @@ import 'navigation/app_router.dart';
 import 'providers/locale_provider.dart';
 import 'providers/product_provider.dart';
 import 'providers/category_provider.dart';
+import 'providers/orders_provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 
@@ -45,6 +46,7 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => CategoryProvider()..loadCategories(),
         ),
+        ChangeNotifierProvider(create: (_) => OrdersProvider()),
       ],
       child: const VegApp(),
     ),

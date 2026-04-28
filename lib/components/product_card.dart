@@ -81,11 +81,21 @@ class ProductCard extends StatelessWidget {
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
+                            if (product.variants.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Available in options',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.softBrown,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                             const SizedBox(
                               height: 8,
                             ),
                             Text(
-                              'Rs ${(variantPrice ?? product.price).toStringAsFixed(0)}',
+                              'Rs ${(variantPrice ?? product.defaultDisplayPrice).toStringAsFixed(0)}',
                               style: AppTextStyles.price.copyWith(fontSize: 16),
                             ),
                           ],

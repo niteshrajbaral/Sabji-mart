@@ -10,12 +10,14 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   String? _error;
+  String? _infoMessage;
   bool _isAuthenticated = false;
 
   // Getters
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get infoMessage => _infoMessage;
   bool get isAuthenticated => _isAuthenticated;
 
   /// Initializes the auth provider by checking for stored user session.
@@ -62,7 +64,9 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Registers a new user.
+  /// Registers a new user. Returns true when the API accepted the registration
+  /// (email verification still pending). The verification message from the API
+  /// is exposed via [infoMessage].
   Future<bool> register({
     required String name,
     required String email,
@@ -72,20 +76,22 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     _isLoading = true;
     _error = null;
+    _infoMessage = null;
     notifyListeners();
 
     try {
-      _user = await _authService.register(
+      _infoMessage = await _authService.register(
         name: name,
         email: email,
         phone: phone,
         password: password,
         confirmPassword: confirmPassword,
       );
-      _isAuthenticated = true;
+      // No user session yet — verification is required before login.
+      _isAuthenticated = false;
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = e.toString().replaceFirst('Exception: ', '');
       _isAuthenticated = false;
       return false;
     } finally {
@@ -112,11 +118,15 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Updates the user's profile data (email, phone, birthday) locally.
+  /// Updates the user's profile data (email, phone, birthday, bio, avatar,
+  /// dietaryPreference) locally.
   Future<bool> updateProfile({
     String? email,
     String? phone,
     String? birthday,
+    String? bio,
+    String? avatar,
+    String? dietaryPreference,
   }) async {
     if (_user == null) return false;
 
@@ -125,14 +135,15 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Create updated user with new data
       _user = _user!.copyWith(
         email: email ?? _user!.email,
         phone: phone ?? _user!.phone,
         birthday: birthday ?? _user!.birthday,
+        bio: bio ?? _user!.bio,
+        avatar: avatar ?? _user!.avatar,
+        dietaryPreference: dietaryPreference ?? _user!.dietaryPreference,
       );
 
-      // Save updated user to storage
       await _authService.updateUser(_user!);
       return true;
     } catch (e) {
@@ -179,6 +190,73 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Resend verification email code
+  Future<bool> resendVerificationCode({
+    required String email,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    _infoMessage = null;
+    notifyListeners();
+
+    try {
+      _infoMessage = await _authService.resendVerificationCode(
+        email: email,
+      );
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Resets the user's password using a token sent to their email.
+  Future<bool> resetPassword({
+    required String resetToken,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _authService.resetPassword(
+        resetToken: resetToken,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      );
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches latest user profile from API and updates local state
+  Future<void> fetchUserProfile() async {
+    if (_user == null) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _user = await _authService.fetchUserProfile();
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
